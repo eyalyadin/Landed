@@ -34,7 +34,7 @@ export default function MaintenanceStatusSelect({
     if (res.ok) {
       router.refresh();
     } else {
-      setValue(prev); // revert on failure
+      setValue(prev);
     }
   }
 
@@ -43,7 +43,7 @@ export default function MaintenanceStatusSelect({
       value={value}
       disabled={saving}
       onChange={(e) => onChange(e.target.value)}
-      className="shrink-0 rounded-lg border border-zinc-300 bg-white px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      className="pixel-input w-auto shrink-0 cursor-pointer"
     >
       {OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>

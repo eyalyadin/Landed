@@ -14,6 +14,12 @@ const STATUS_LABEL: Record<string, string> = {
   resolved: "טופל",
 };
 
+const STATUS_PILL: Record<string, string> = {
+  open: "pixel-pill pixel-pill--open",
+  in_progress: "pixel-pill pixel-pill--in-progress",
+  resolved: "pixel-pill pixel-pill--done",
+};
+
 export default async function TenantThread({
   params,
 }: {
@@ -36,7 +42,6 @@ export default async function TenantThread({
 
   if (!tenant) notFound();
 
-  // Plain, serializable shapes for the client rent section (Decimal/Date → number/string).
   const schedules = tenant.rentSchedules.map((s) => ({
     id: s.id,
     amount: Number(s.amount),
@@ -54,21 +59,27 @@ export default async function TenantThread({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8">
-      <header className="mb-6 flex items-center justify-between">
+      {/* Header */}
+      <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <Link href="/" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+          <Link
+            href="/"
+            className="pixel-btn inline-flex text-xs"
+            aria-label="חזרה לרשימת השוכרים"
+          >
             ← חזרה לרשימה
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            {tenant.name} <span className="text-base text-zinc-500">· {tenant.unitLabel}</span>
+          <h1 className="mt-3 text-lg font-semibold leading-snug">
+            {tenant.name}{" "}
+            <span className="text-sm font-normal text-muted">· {tenant.unitLabel}</span>
           </h1>
         </div>
         <span
-          className={`text-sm ${
+          className={
             tenant.telegramChatId
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-zinc-400"
-          }`}
+              ? "pixel-pill pixel-pill--linked mt-1"
+              : "pixel-pill pixel-pill--unlinked mt-1"
+          }
         >
           {tenant.telegramChatId ? "מקושר ✓" : "לא מקושר"}
         </span>
@@ -76,9 +87,9 @@ export default async function TenantThread({
 
       {/* Message thread */}
       <section className="mb-6">
-        <div className="flex flex-col gap-2 rounded-xl border border-black/[.08] bg-zinc-50 p-4 dark:border-white/[.145] dark:bg-zinc-900/40">
+        <div className="pixel-card flex flex-col gap-2 bg-surface p-4">
           {tenant.messages.length === 0 && (
-            <p className="py-8 text-center text-sm text-zinc-400">אין הודעות עדיין</p>
+            <p className="py-8 text-center text-sm text-muted">אין הודעות עדיין</p>
           )}
           {tenant.messages.map((m) => {
             const outbound = m.direction === "outbound";
@@ -89,16 +100,12 @@ export default async function TenantThread({
               >
                 <div
                   dir="auto"
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                    outbound
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                  }`}
+                  className={outbound ? "pixel-bubble-out" : "pixel-bubble-in"}
                 >
-                  <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                  <div className="whitespace-pre-wrap break-words text-sm">{m.body}</div>
                   <div
-                    className={`mt-1 text-[10px] ${
-                      outbound ? "text-blue-100" : "text-zinc-400"
+                    className={`font-vt mt-1 text-xs ${
+                      outbound ? "opacity-80" : "text-muted"
                     }`}
                   >
                     {formatDateTime(m.createdAt)}
@@ -109,42 +116,44 @@ export default async function TenantThread({
           })}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-4">
           <ReplyBox tenantId={tenant.id} linked={Boolean(tenant.telegramChatId)} />
         </div>
       </section>
 
       {/* Maintenance */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">בקשות תחזוקה</h2>
+        <h2 className="mb-3 text-base font-semibold">בקשות תחזוקה</h2>
         {tenant.maintenanceRequests.length === 0 ? (
-          <p className="text-sm text-zinc-400">אין בקשות תחזוקה</p>
+          <p className="text-sm text-muted">אין בקשות תחזוקה</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-4">
             {tenant.maintenanceRequests.map((r) => (
-              <li
-                key={r.id}
-                className="rounded-xl border border-black/[.08] bg-white p-4 dark:border-white/[.145] dark:bg-zinc-950"
-              >
+              <li key={r.id} className="pixel-card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p dir="auto" className="font-medium">
+                    <p dir="auto" className="font-semibold">
                       {r.title}
                     </p>
                     {r.description && (
-                      <p dir="auto" className="mt-0.5 text-sm text-zinc-500">
+                      <p dir="auto" className="mt-0.5 text-sm text-muted">
                         {r.description}
                       </p>
                     )}
-                    <p className="mt-1 text-xs text-zinc-400">
+                    <p className="font-vt mt-1 text-xs text-muted">
                       {formatDateTime(r.createdAt)}
                     </p>
                   </div>
-                  <MaintenanceStatusSelect
-                    requestId={r.id}
-                    status={r.status}
-                    label={STATUS_LABEL[r.status] ?? r.status}
-                  />
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <span className={STATUS_PILL[r.status] ?? "pixel-pill pixel-pill--open"}>
+                      {STATUS_LABEL[r.status] ?? r.status}
+                    </span>
+                    <MaintenanceStatusSelect
+                      requestId={r.id}
+                      status={r.status}
+                      label={STATUS_LABEL[r.status] ?? r.status}
+                    />
+                  </div>
                 </div>
 
                 {r.photos.length > 0 && (
@@ -155,7 +164,8 @@ export default async function TenantThread({
                         key={p.id}
                         src={`/api/photo/${encodeURIComponent(p.telegramFileId)}`}
                         alt={p.caption ?? "תמונת תחזוקה"}
-                        className="h-28 w-28 rounded-lg object-cover"
+                        className="h-28 w-28 object-cover border-2 border-ink"
+                        style={{ boxShadow: "var(--pixel-shadow-sm)" }}
                       />
                     ))}
                   </div>
@@ -168,7 +178,7 @@ export default async function TenantThread({
 
       {/* Rent */}
       <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">שכר דירה</h2>
+        <h2 className="mb-3 text-base font-semibold">שכר דירה</h2>
         <RentSection tenantId={tenant.id} schedules={schedules} invoices={invoices} />
       </section>
     </main>

@@ -55,38 +55,42 @@ export default function ReplyBox({
 
   if (!linked) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500 dark:border-zinc-700">
+      <div className="border-2 border-dashed border-ink bg-surface px-4 py-3 text-center text-sm text-muted">
         השוכר עדיין לא קושר לטלגרם — אי אפשר לשלוח הודעה.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-black/[.08] bg-white p-3 dark:border-white/[.145] dark:bg-zinc-950">
+    <div className="pixel-card p-3">
       <textarea
         dir="auto"
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="כתוב תשובה…"
         rows={3}
-        className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
+        className="pixel-input"
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
         }}
       />
-      {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm font-medium" style={{ color: "#DC2626" }}>
+          {error}
+        </p>
+      )}
       <div className="mt-2 flex items-center justify-between gap-2">
         <button
           onClick={suggest}
           disabled={suggesting || sending}
-          className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="pixel-btn"
         >
           {suggesting ? "חושב…" : "הצעת תשובה (AI)"}
         </button>
         <button
           onClick={send}
           disabled={sending || suggesting || !body.trim()}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className="pixel-btn pixel-btn-cta"
         >
           {sending ? "שולח…" : "שליחה"}
         </button>

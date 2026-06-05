@@ -29,15 +29,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-6 py-24 dark:bg-black">
-      <form
-        onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-2xl border border-black/[.08] bg-white p-8 shadow-sm dark:border-white/[.145] dark:bg-zinc-950"
-      >
-        <h1 className="text-2xl font-semibold tracking-tight">כניסת בעל הבית</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Landlord login</p>
+    <main className="flex flex-1 items-center justify-center bg-canvas px-6 py-24">
+      <form onSubmit={onSubmit} className="pixel-card w-full max-w-sm">
+        <h1 className="text-lg font-semibold">כניסת בעל הבית</h1>
+        <p className="mt-1 text-xs text-muted">Landlord login</p>
 
-        <label className="mt-6 block text-sm font-medium" htmlFor="password">
+        <label className="mt-6 block text-sm font-semibold" htmlFor="password">
           סיסמה
         </label>
         <input
@@ -46,15 +43,19 @@ export default function LoginPage() {
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900"
+          className="pixel-input mt-1"
         />
 
-        {error && <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && (
+          <p className="mt-3 text-sm font-medium" style={{ color: "#DC2626" }}>
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={loading || password.length === 0}
-          className="mt-6 w-full rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className="pixel-btn pixel-btn-ink mt-6 w-full"
         >
           {loading ? "מתחבר…" : "כניסה"}
         </button>

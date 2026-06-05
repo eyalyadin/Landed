@@ -18,17 +18,15 @@ export default async function Dashboard() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-7 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">ניהול שוכרים</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {tenants.length} שוכרים
-          </p>
+          <h1 className="text-lg font-semibold tracking-tight">ניהול שוכרים</h1>
+          <p className="mt-1 text-sm text-muted">{tenants.length} שוכרים</p>
         </div>
         <LogoutButton />
       </header>
 
-      <ul className="space-y-3">
+      <ul className="flex flex-col gap-5">
         {tenants.map((t) => {
           const last = t.messages[0];
           const openCount = t.maintenanceRequests.length;
@@ -38,46 +36,44 @@ export default async function Dashboard() {
               : null;
 
           return (
-            <li
-              key={t.id}
-              className="rounded-xl border border-black/[.08] bg-white p-4 transition-colors hover:border-zinc-400 dark:border-white/[.145] dark:bg-zinc-950"
-            >
-              <Link href={`/tenants/${t.id}`} className="block">
+            <li key={t.id} className="pixel-card p-0">
+              <Link
+                href={`/tenants/${t.id}`}
+                className="block cursor-pointer px-4 pt-4 pb-3 transition-colors hover:bg-surface"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{t.name}</span>
-                      <span className="text-sm text-zinc-500">· {t.unitLabel}</span>
+                      <span className="font-semibold">{t.name}</span>
+                      <span className="text-sm text-muted">· {t.unitLabel}</span>
                     </div>
                     {last ? (
-                      <p
-                        dir="auto"
-                        className="mt-1 truncate text-sm text-zinc-500 dark:text-zinc-400"
-                      >
+                      <p dir="auto" className="mt-1 truncate text-sm text-muted">
                         {last.direction === "outbound" ? "↩ " : ""}
                         {last.body}
                       </p>
                     ) : (
-                      <p className="mt-1 text-sm text-zinc-400">אין הודעות עדיין</p>
+                      <p className="mt-1 text-sm text-muted">אין הודעות עדיין</p>
                     )}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
+
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
                     {last && (
-                      <span className="text-xs text-zinc-400">
+                      <span className="font-vt text-xs text-muted">
                         {formatDateTime(last.createdAt)}
                       </span>
                     )}
                     {openCount > 0 && (
-                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      <span className="pixel-pill pixel-pill--maint">
                         {openCount} תחזוקה
                       </span>
                     )}
                     <span
-                      className={`text-xs ${
+                      className={
                         t.telegramChatId
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-zinc-400"
-                      }`}
+                          ? "pixel-pill pixel-pill--linked"
+                          : "pixel-pill pixel-pill--unlinked"
+                      }
                     >
                       {t.telegramChatId ? "מקושר ✓" : "לא מקושר"}
                     </span>
@@ -86,13 +82,13 @@ export default async function Dashboard() {
               </Link>
 
               {inviteLink && (
-                <div className="mt-3 border-t border-dashed border-zinc-200 pt-3 dark:border-zinc-800">
-                  <span className="text-xs text-zinc-500">קישור הזמנה לטלגרם:</span>
+                <div className="border-t-2 border-dashed border-ink px-4 py-2">
+                  <span className="text-xs text-muted">קישור הזמנה לטלגרם:</span>
                   <a
                     href={inviteLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ms-2 break-all text-xs text-blue-600 hover:underline dark:text-blue-400"
+                    className="ms-2 break-all text-xs text-accent hover:underline"
                   >
                     {inviteLink}
                   </a>

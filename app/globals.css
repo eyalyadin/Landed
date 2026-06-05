@@ -1,35 +1,218 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ─── Tailwind v4 color tokens (become bg / text / border utilities) ─── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --color-background: #FAFAFA;
+  --color-foreground: #09090B;
+  --color-canvas:     #FAFAFA;
+  --color-ink:        #09090B;
+  --color-cta:        #EC4899;
+  --color-accent:     #2563EB;
+  --color-muted:      #71717A;
+  --color-surface:    #F4F4F5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ─── Runtime CSS vars (shadow helpers, font vars injected by next/font) ─── */
+:root {
+  --pixel-shadow:    4px 4px 0 0 #09090B;
+  --pixel-shadow-sm: 2px 2px 0 0 #09090B;
+}
+
+/* ─── Base ─── */
+@layer base {
+  body {
+    background: #FAFAFA;
+    color: #09090B;
+    /* Hebrew-first: Rubik (bilingual) for all text, safe Hebrew fallbacks */
+    font-family:
+      var(--font-hebrew, "Rubik"),
+      "Rubik",
+      "Assistant",
+      "Noto Sans Hebrew",
+      system-ui,
+      sans-serif;
+    line-height: 1.65;
+  }
+
+  /* Headings: Press Start 2P for Latin glyphs, Rubik for Hebrew (auto-fallback) */
+  h1, h2, h3 {
+    font-family:
+      var(--font-pixel, "Rubik"),
+      var(--font-hebrew, "Rubik"),
+      "Rubik",
+      "Noto Sans Hebrew",
+      sans-serif;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+
+  /* VT323 for numbers, dates, currency amounts */
+  .font-vt {
+    font-family: var(--font-vt, "Courier New", monospace);
+    font-size: 1.1em;
+    letter-spacing: 0.04em;
+  }
+
+  :focus-visible {
+    outline: 3px solid #EC4899;
+    outline-offset: 2px;
+  }
+
+  img {
+    image-rendering: pixelated;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  /* Hebrew-friendly system font stack (no external fetch). */
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    "Rubik",
-    "Assistant",
-    "Helvetica Neue",
-    Arial,
-    "Noto Sans Hebrew",
-    sans-serif;
+/* ─── Pixel UI component primitives ─── */
+@layer components {
+
+  /* CARD */
+  .pixel-card {
+    background: #FAFAFA;
+    border: 3px solid #09090B;
+    box-shadow: var(--pixel-shadow);
+    padding: 1rem;
+  }
+
+  /* INPUTS / TEXTAREA / SELECT */
+  .pixel-input {
+    background: #FAFAFA;
+    border: 2px solid #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+    padding: 0.375rem 0.625rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    width: 100%;
+    transition: border-color 150ms, box-shadow 150ms;
+    cursor: text;
+    line-height: 1.5;
+    resize: none;
+  }
+  .pixel-input:focus {
+    border-color: #EC4899;
+    box-shadow: 3px 3px 0 0 #EC4899;
+  }
+  .pixel-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* BASE BUTTON — pixel square, hard offset shadow */
+  .pixel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    background: #FAFAFA;
+    border: 2px solid #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+    padding: 0.375rem 0.875rem;
+    font-family:
+      var(--font-pixel, "Rubik"),
+      var(--font-hebrew, "Rubik"),
+      "Rubik",
+      sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #09090B;
+    cursor: pointer;
+    transition: transform 150ms, box-shadow 150ms, background 150ms;
+    white-space: nowrap;
+    line-height: 1.6;
+  }
+  .pixel-btn:hover:not(:disabled) {
+    background: #F4F4F5;
+  }
+  .pixel-btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+  .pixel-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* INK (dark filled) */
+  .pixel-btn-ink {
+    background: #09090B;
+    color: #FAFAFA;
+    border-color: #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+  }
+  .pixel-btn-ink:hover:not(:disabled) {
+    background: #27272A;
+  }
+
+  /* CTA (hot-pink) */
+  .pixel-btn-cta {
+    background: #EC4899;
+    color: #ffffff;
+    border-color: #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+  }
+  .pixel-btn-cta:hover:not(:disabled) {
+    background: #DB2777;
+  }
+
+  /* SUCCESS (green outline) */
+  .pixel-btn-success {
+    background: #DCFCE7;
+    color: #15803D;
+    border-color: #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+  }
+  .pixel-btn-success:hover:not(:disabled) {
+    background: #BBF7D0;
+  }
+
+  /* STATUS PILLS */
+  .pixel-pill {
+    display: inline-block;
+    border: 2px solid #09090B;
+    padding: 0.05rem 0.45rem;
+    font-family:
+      var(--font-pixel, "Rubik"),
+      var(--font-hebrew, "Rubik"),
+      "Rubik",
+      sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.7;
+    white-space: nowrap;
+  }
+  .pixel-pill--pending    { background: #F4F4F5; color: #09090B; }
+  .pixel-pill--paid       { background: #DCFCE7; color: #15803D; }
+  .pixel-pill--overdue    { background: #FEE2E2; color: #DC2626; }
+  .pixel-pill--open       { background: #FEF3C7; color: #B45309; }
+  .pixel-pill--in-progress { background: #DBEAFE; color: #1D4ED8; }
+  .pixel-pill--done       { background: #DCFCE7; color: #15803D; }
+  .pixel-pill--linked     { background: #DCFCE7; color: #15803D; }
+  .pixel-pill--unlinked   { background: #F4F4F5; color: #71717A; }
+  .pixel-pill--maint      { background: #FEF3C7; color: #B45309; }
+
+  /* CHAT BUBBLES */
+  .pixel-bubble-out {
+    background: #2563EB;
+    color: #fff;
+    border: 2px solid #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+    padding: 0.5rem 0.75rem;
+    max-width: 80%;
+  }
+  .pixel-bubble-in {
+    background: #FAFAFA;
+    color: #09090B;
+    border: 2px solid #09090B;
+    box-shadow: var(--pixel-shadow-sm);
+    padding: 0.5rem 0.75rem;
+    max-width: 80%;
+  }
 }
