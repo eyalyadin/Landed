@@ -25,7 +25,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -195,8 +194,6 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
             <DropdownMenuContent align="end" className="w-44">
               <DropdownMenuItem className="text-[13px]">Profile</DropdownMenuItem>
               <DropdownMenuItem className="text-[13px]">Account Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[13px]">Sign Out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
