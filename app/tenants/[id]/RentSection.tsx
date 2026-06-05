@@ -20,9 +20,9 @@ type Invoice = {
 };
 
 const STATUS: Record<Invoice["status"], { label: string; cls: string }> = {
-  pending: { label: "ממתין", cls: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
-  paid: { label: "שולם", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  overdue: { label: "באיחור", cls: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
+  pending: { label: "Pending", cls: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
+  paid: { label: "Paid", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
+  overdue: { label: "Overdue", cls: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
 };
 
 export default function RentSection({
@@ -63,7 +63,7 @@ export default function RentSection({
       router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "יצירת לוח נכשלה");
+      setError(data.error ?? "Failed to create schedule");
     }
   }
 
@@ -85,7 +85,7 @@ export default function RentSection({
         <ul className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
           {schedules.map((s) => (
             <li key={s.id}>
-              {formatILS(s.amount)} · כל {s.dueDayOfMonth} בחודש · החל מ-{formatDate(new Date(s.startDate))}
+              {formatILS(s.amount)} · Every {s.dueDayOfMonth}{s.dueDayOfMonth === 1 ? "st" : s.dueDayOfMonth === 2 ? "nd" : s.dueDayOfMonth === 3 ? "rd" : "th"} of month · From {formatDate(new Date(s.startDate))}
             </li>
           ))}
         </ul>
@@ -97,7 +97,7 @@ export default function RentSection({
         className="flex flex-wrap items-end gap-3 rounded-xl border border-black/[.08] bg-white p-4 dark:border-white/[.145] dark:bg-zinc-950"
       >
         <div>
-          <label className="block text-xs text-zinc-500">סכום (₪)</label>
+          <label className="block text-xs text-zinc-500">Amount (₪)</label>
           <input
             type="number"
             min="1"
@@ -109,7 +109,7 @@ export default function RentSection({
           />
         </div>
         <div>
-          <label className="block text-xs text-zinc-500">יום בחודש (1–28)</label>
+          <label className="block text-xs text-zinc-500">Day of month (1–28)</label>
           <input
             type="number"
             min="1"
@@ -121,7 +121,7 @@ export default function RentSection({
           />
         </div>
         <div>
-          <label className="block text-xs text-zinc-500">תאריך התחלה</label>
+          <label className="block text-xs text-zinc-500">Start date</label>
           <input
             type="date"
             required
@@ -135,14 +135,14 @@ export default function RentSection({
           disabled={busy}
           className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
         >
-          צור לוח + 12 חשבוניות
+          Create schedule + 12 invoices
         </button>
         {error && <p className="w-full text-sm text-red-600 dark:text-red-400">{error}</p>}
       </form>
 
       {/* Invoices */}
       {invoices.length === 0 ? (
-        <p className="text-sm text-zinc-400">אין חשבוניות עדיין</p>
+        <p className="text-sm text-zinc-400">No invoices yet</p>
       ) : (
         <ul className="divide-y divide-zinc-200 rounded-xl border border-black/[.08] dark:divide-zinc-800 dark:border-white/[.145]">
           {invoices.map((inv) => (
@@ -160,7 +160,7 @@ export default function RentSection({
                   disabled={busy}
                   className="text-xs text-zinc-500 hover:underline disabled:opacity-50"
                 >
-                  בטל תשלום
+                  Undo payment
                 </button>
               ) : (
                 <button
@@ -168,7 +168,7 @@ export default function RentSection({
                   disabled={busy}
                   className="rounded-lg border border-emerald-300 px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950"
                 >
-                  סמן כשולם
+                  Mark as paid
                 </button>
               )}
             </li>

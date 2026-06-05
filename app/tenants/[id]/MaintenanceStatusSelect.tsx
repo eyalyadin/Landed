@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const OPTIONS: { value: string; label: string }[] = [
-  { value: "new", label: "חדש" },
-  { value: "in_progress", label: "בטיפול" },
-  { value: "waiting_on_tenant", label: "ממתין לשוכר" },
-  { value: "waiting_on_vendor", label: "ממתין לקבלן" },
-  { value: "completed", label: "הושלם" },
+  { value: "new", label: "New" },
+  { value: "in_progress", label: "In progress" },
+  { value: "waiting_on_tenant", label: "Waiting on tenant" },
+  { value: "waiting_on_vendor", label: "Waiting on vendor" },
+  { value: "completed", label: "Completed" },
 ];
 
 export default function MaintenanceStatusSelect({

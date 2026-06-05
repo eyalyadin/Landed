@@ -25,11 +25,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // lang="he" dir="rtl" for Hebrew; message bubbles use dir="auto" per tenant language
+  // Message bubbles use dir="auto" so Hebrew tenant content still renders RTL correctly
   return (
     <html
-      lang="he"
-      dir="rtl"
+      lang="en"
+      dir="ltr"
       className={`${geistSans.variable} ${geistMono.variable} h-full bg-background`}
     >
       <body className="min-h-full font-sans antialiased">{children}</body>

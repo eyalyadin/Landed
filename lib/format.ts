@@ -24,7 +24,7 @@ export function formatDate(d: Date): string {
 }
 
 export function formatILS(amount: number): string {
-  return new Intl.NumberFormat("he-IL", {
+  return new Intl.NumberFormat("en-IL", {
     style: "currency",
     currency: "ILS",
     maximumFractionDigits: 2,

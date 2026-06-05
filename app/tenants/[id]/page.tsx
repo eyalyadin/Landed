@@ -10,11 +10,11 @@ import RentSection from "./RentSection";
 export const dynamic = "force-dynamic";
 
 const JOB_STATUS_LABEL: Record<string, string> = {
-  new: "חדש",
-  in_progress: "בטיפול",
-  waiting_on_tenant: "ממתין לשוכר",
-  waiting_on_vendor: "ממתין לקבלן",
-  completed: "הושלם",
+  new: "New",
+  in_progress: "In progress",
+  waiting_on_tenant: "Waiting on tenant",
+  waiting_on_vendor: "Waiting on vendor",
+  completed: "Completed",
 };
 
 export default async function TenantThread({
@@ -73,7 +73,7 @@ export default async function TenantThread({
       <header className="mb-6 flex items-center justify-between">
         <div>
           <Link href="/tenants" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
-            ← חזרה לרשימת השוכרים
+            ← Back to tenants
           </Link>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">
             {tenant.name}
@@ -92,7 +92,7 @@ export default async function TenantThread({
               : "text-zinc-400"
           }`}
         >
-          {tenant.telegramChatId ? "מקושר ✓" : "לא מקושר"}
+          {tenant.telegramChatId ? "Linked ✓" : "Not linked"}
         </span>
       </header>
 
@@ -100,7 +100,7 @@ export default async function TenantThread({
       <section className="mb-6">
         <div className="flex flex-col gap-2 rounded-xl border border-black/[.08] bg-zinc-50 p-4 dark:border-white/[.145] dark:bg-zinc-900/40">
           {(!tenant.thread || tenant.thread.messages.length === 0) && (
-            <p className="py-8 text-center text-sm text-zinc-400">אין הודעות עדיין</p>
+            <p className="py-8 text-center text-sm text-zinc-400">No messages yet</p>
           )}
           {tenant.thread?.messages.map((m) => {
             const outbound = m.direction === "outbound";
@@ -131,9 +131,9 @@ export default async function TenantThread({
 
       {/* Jobs (maintenance) */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">בקשות תחזוקה</h2>
+        <h2 className="mb-3 text-lg font-semibold">Maintenance requests</h2>
         {tenant.jobs.length === 0 ? (
-          <p className="text-sm text-zinc-400">אין בקשות תחזוקה</p>
+          <p className="text-sm text-zinc-400">No maintenance requests</p>
         ) : (
           <ul className="space-y-3">
             {tenant.jobs.map((job) => (
@@ -163,7 +163,7 @@ export default async function TenantThread({
                       <img
                         key={att.id}
                         src={`/api/photo/${encodeURIComponent(att.telegramFileId)}`}
-                        alt={att.caption ?? "תמונת תחזוקה"}
+                        alt={att.caption ?? "Maintenance photo"}
                         className="h-28 w-28 rounded-lg object-cover"
                       />
                     ))}
@@ -177,7 +177,7 @@ export default async function TenantThread({
 
       {/* Rent */}
       <section className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">שכר דירה</h2>
+        <h2 className="mb-3 text-lg font-semibold">Rent</h2>
         <RentSection tenantId={String(tenant.id)} schedules={schedules} invoices={invoices} />
       </section>
     </main>

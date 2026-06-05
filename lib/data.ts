@@ -161,8 +161,8 @@ export const sampleProperties: Property[] = [
     openRepairCount: 1,
     contractIds: ['contract-1', 'contract-2'],
     vendorIds: ['vendor-1'],
-    managerName: 'ועד הבית',
-    notes: 'דירת פינה, אור טבעי מעולה'
+    managerName: 'Building Committee',
+    notes: 'Corner unit with excellent natural light'
   },
   {
     id: 'prop-2',
@@ -181,7 +181,7 @@ export const sampleProperties: Property[] = [
     openRepairCount: 2,
     contractIds: ['contract-3'],
     vendorIds: [],
-    notes: 'בית פרטי עם גינה'
+    notes: 'Private house with garden'
   },
   {
     id: 'prop-3',
@@ -201,7 +201,7 @@ export const sampleProperties: Property[] = [
     openRepairCount: 0,
     contractIds: ['contract-4', 'contract-5'],
     vendorIds: ['vendor-2'],
-    managerName: 'חברת ניהול'
+    managerName: 'Management Company'
   },
   {
     id: 'prop-4',
@@ -220,7 +220,7 @@ export const sampleProperties: Property[] = [
     openRepairCount: 1,
     contractIds: [],
     vendorIds: [],
-    notes: 'שופץ לאחרונה, מוכן לשוכר חדש'
+    notes: 'Recently renovated, ready for new tenant'
   },
   {
     id: 'prop-5',
@@ -240,7 +240,7 @@ export const sampleProperties: Property[] = [
     openRepairCount: 0,
     contractIds: ['contract-6'],
     vendorIds: [],
-    managerName: 'חברת ניהול'
+    managerName: 'Management Company'
   },
   {
     id: 'prop-6',
@@ -265,33 +265,33 @@ export const sampleProperties: Property[] = [
 export const sampleTenants: Tenant[] = [
   {
     id: 'tenant-1',
-    fullName: 'דנה לוי',
+    fullName: 'Dana Levy',
     phone: '+972501112233',
     email: 'dana.levi@email.com',
     propertyId: 'prop-1',
     moveInDate: '2025-03-01',
     leaseEndDate: '2026-02-28',
-    paymentMethod: 'העברה בנקאית',
+    paymentMethod: 'Bank transfer',
     paymentStatus: 'paid',
     contractStatus: 'active',
-    keysAccessNotes: '2 מפתחות, שלט',
+    keysAccessNotes: '2 keys, remote',
     messageThreadId: 'thread-1',
-    notes: 'שוכרת שקטה, משלמת בזמן'
+    notes: 'Quiet tenant, pays on time'
   },
   {
     id: 'tenant-2',
-    fullName: 'יוסי כהן',
+    fullName: 'Yossi Cohen',
     phone: '+972502223344',
     email: 'yossi.cohen@email.com',
     propertyId: 'prop-2',
     moveInDate: '2024-08-01',
     leaseEndDate: '2026-07-31',
-    paymentMethod: 'צ׳ק',
+    paymentMethod: 'Cheque',
     paymentStatus: 'overdue',
     contractStatus: 'active',
-    keysAccessNotes: '3 מפתחות, שלט לחניה',
+    keysAccessNotes: '3 keys, parking remote',
     messageThreadId: 'thread-2',
-    notes: 'לעקוב אחר תשלום מאוחר'
+    notes: 'Follow up on late payment'
   },
   {
     id: 'tenant-3',
@@ -301,41 +301,41 @@ export const sampleTenants: Tenant[] = [
     propertyId: 'prop-3',
     moveInDate: '2025-01-01',
     leaseEndDate: '2025-12-31',
-    paymentMethod: 'הוראת קבע',
+    paymentMethod: 'Standing order',
     paymentStatus: 'due-soon',
     contractStatus: 'expiring-soon',
-    keysAccessNotes: '2 מפתחות, כרטיס חניה',
+    keysAccessNotes: '2 keys, parking card',
     messageThreadId: 'thread-3'
   },
   {
     id: 'tenant-4',
-    fullName: 'אורן ברק',
+    fullName: 'Oren Barak',
     phone: '+972504445566',
     email: 'oren.barak@email.com',
     propertyId: 'prop-5',
     moveInDate: '2025-06-01',
     leaseEndDate: '2026-05-31',
-    paymentMethod: 'העברה בנקאית',
+    paymentMethod: 'Bank transfer',
     paymentStatus: 'paid',
     contractStatus: 'active',
-    keysAccessNotes: '2 מפתחות',
+    keysAccessNotes: '2 keys',
     messageThreadId: 'thread-4',
-    notes: 'שוכר חדש, מגיב מהר'
+    notes: 'New tenant, quick to respond'
   },
   {
     id: 'tenant-5',
-    fullName: 'מיכל שפירא',
+    fullName: 'Michal Shapira',
     phone: '+972505556677',
     email: 'michal.s@email.com',
     propertyId: 'prop-6',
     moveInDate: '2024-12-01',
     leaseEndDate: '2025-11-30',
-    paymentMethod: 'צ׳ק',
+    paymentMethod: 'Cheque',
     paymentStatus: 'partial',
     contractStatus: 'active',
-    keysAccessNotes: '4 מפתחות, קוד אזעקה: 1234',
+    keysAccessNotes: '4 keys, alarm code: 1234',
     messageThreadId: 'thread-5',
-    notes: 'שילמה חלקית, ממתינה לשאר'
+    notes: 'Paid partially, awaiting remainder'
   }
 ]
 
@@ -350,7 +350,7 @@ export const samplePayments: Payment[] = [
     status: 'paid',
     dueDate: '2026-06-01',
     paidDate: '2026-05-28',
-    source: 'העברה בנקאית',
+    source: 'Bank transfer',
     reference: 'TXN-2026-0528-001'
   },
   {
@@ -383,7 +383,7 @@ export const samplePayments: Payment[] = [
     status: 'paid',
     dueDate: '2026-06-01',
     paidDate: '2026-06-01',
-    source: 'העברה בנקאית'
+    source: 'Bank transfer'
   },
   {
     id: 'pay-5',
@@ -395,7 +395,7 @@ export const samplePayments: Payment[] = [
     status: 'partial',
     dueDate: '2026-06-01',
     paidDate: '2026-06-03',
-    notes: 'תשלום חלקי — ₪2,000 מתוך ₪4,200'
+    notes: 'Partial payment — ₪2,000 of ₪4,200'
   },
   {
     id: 'pay-6',
@@ -407,7 +407,7 @@ export const samplePayments: Payment[] = [
     status: 'paid',
     dueDate: '2026-05-01',
     paidDate: '2026-04-30',
-    source: 'העברה בנקאית'
+    source: 'Bank transfer'
   },
   {
     id: 'pay-7',
@@ -419,20 +419,20 @@ export const samplePayments: Payment[] = [
     status: 'paid',
     dueDate: '2025-03-01',
     paidDate: '2025-02-28',
-    source: 'העברה בנקאית',
-    notes: 'פיקדון — 2 חודשים'
+    source: 'Bank transfer',
+    notes: 'Security deposit — 2 months'
   }
 ]
 
 export const sampleContracts: Contract[] = [
-  { id: 'contract-1', documentName: 'חוזה שכירות — 123 Oak St 4A', documentType: 'rental-contract', propertyId: 'prop-1', uploadedAt: '2025-03-01' },
-  { id: 'contract-2', documentName: 'פרוטוקול כניסה — 123 Oak St 4A', documentType: 'inventory', propertyId: 'prop-1', uploadedAt: '2025-03-01' },
-  { id: 'contract-3', documentName: 'חוזה שכירות — 456 Pine Ave', documentType: 'rental-contract', propertyId: 'prop-2', uploadedAt: '2024-08-01' },
-  { id: 'contract-4', documentName: 'חוזה שכירות — 789 Market St 202', documentType: 'rental-contract', propertyId: 'prop-3', uploadedAt: '2025-01-01' },
-  { id: 'contract-5', documentName: 'קבלת פיקדון — 789 Market St', documentType: 'deposit-document', propertyId: 'prop-3', uploadedAt: '2025-01-01' },
-  { id: 'contract-6', documentName: 'חוזה שכירות — 555 Bay View Unit 8', documentType: 'rental-contract', propertyId: 'prop-5', uploadedAt: '2025-06-01' },
-  { id: 'contract-7', documentName: 'חוזה שכירות — 888 Mission Blvd', documentType: 'rental-contract', propertyId: 'prop-6', uploadedAt: '2024-12-01' },
-  { id: 'contract-8', documentName: 'מסירת מפתחות — 123 Oak St 4A', documentType: 'keys-record', propertyId: 'prop-1', uploadedAt: '2025-03-01' }
+  { id: 'contract-1', documentName: 'Rental Contract — 123 Oak St 4A', documentType: 'rental-contract', propertyId: 'prop-1', uploadedAt: '2025-03-01' },
+  { id: 'contract-2', documentName: 'Entry Inventory — 123 Oak St 4A', documentType: 'inventory', propertyId: 'prop-1', uploadedAt: '2025-03-01' },
+  { id: 'contract-3', documentName: 'Rental Contract — 456 Pine Ave', documentType: 'rental-contract', propertyId: 'prop-2', uploadedAt: '2024-08-01' },
+  { id: 'contract-4', documentName: 'Rental Contract — 789 Market St 202', documentType: 'rental-contract', propertyId: 'prop-3', uploadedAt: '2025-01-01' },
+  { id: 'contract-5', documentName: 'Deposit Receipt — 789 Market St', documentType: 'deposit-document', propertyId: 'prop-3', uploadedAt: '2025-01-01' },
+  { id: 'contract-6', documentName: 'Rental Contract — 555 Bay View Unit 8', documentType: 'rental-contract', propertyId: 'prop-5', uploadedAt: '2025-06-01' },
+  { id: 'contract-7', documentName: 'Rental Contract — 888 Mission Blvd', documentType: 'rental-contract', propertyId: 'prop-6', uploadedAt: '2024-12-01' },
+  { id: 'contract-8', documentName: 'Keys Handover — 123 Oak St 4A', documentType: 'keys-record', propertyId: 'prop-1', uploadedAt: '2025-03-01' }
 ]
 
 export const sampleMessageThreads: MessageThread[] = [
@@ -440,25 +440,25 @@ export const sampleMessageThreads: MessageThread[] = [
     id: 'thread-1',
     tenantId: 'tenant-1',
     propertyId: 'prop-1',
-    lastMessagePreview: 'תודה על התיקון המהיר של המזגן!',
+    lastMessagePreview: 'Thanks for the quick AC repair!',
     lastMessageAt: '2026-06-04T14:30:00Z',
     unreadCount: 0,
     urgency: 'normal',
     status: 'resolved',
-    summary: 'תיקון מזגן הושלם בהצלחה',
-    suggestedNextAction: 'לא נדרשת פעולה'
+    summary: 'AC repair completed successfully',
+    suggestedNextAction: 'No action required'
   },
   {
     id: 'thread-2',
     tenantId: 'tenant-2',
     propertyId: 'prop-2',
-    lastMessagePreview: 'אשלם את שכר הדירה עד יום שישי, היה לי הוצאה בלתי צפויה',
+    lastMessagePreview: "I'll pay the rent by Friday, I had an unexpected expense",
     lastMessageAt: '2026-06-05T09:15:00Z',
     unreadCount: 1,
     urgency: 'urgent',
     status: 'open',
-    summary: 'שוכר מבקש דחייה בתשלום עקב הוצאה בלתי צפויה',
-    suggestedNextAction: 'לאשר תאריך תשלום ולתעד את ההסכם'
+    summary: 'Tenant requesting payment deferral due to unexpected expense',
+    suggestedNextAction: 'Confirm payment date and document the agreement'
   },
   {
     id: 'thread-3',
@@ -476,7 +476,7 @@ export const sampleMessageThreads: MessageThread[] = [
     id: 'thread-4',
     tenantId: 'tenant-4',
     propertyId: 'prop-5',
-    lastMessagePreview: 'נכנסתי, הכל נראה מצוין!',
+    lastMessagePreview: 'Moved in, everything looks great!',
     lastMessageAt: '2026-06-01T10:00:00Z',
     unreadCount: 0,
     urgency: 'normal',
@@ -486,13 +486,13 @@ export const sampleMessageThreads: MessageThread[] = [
     id: 'thread-5',
     tenantId: 'tenant-5',
     propertyId: 'prop-6',
-    lastMessagePreview: 'הדוד שמש שוב משמיע רעשים מוזרים',
+    lastMessagePreview: 'The solar boiler is making strange noises again',
     lastMessageAt: '2026-06-05T08:30:00Z',
     unreadCount: 2,
     urgency: 'urgent',
     status: 'open',
-    summary: 'דווח על תקלה בדוד שמש — ייתכן שנדרש תיקון',
-    suggestedNextAction: 'לתאם ביקור שרברב'
+    summary: 'Solar boiler fault reported — repair may be needed',
+    suggestedNextAction: 'Schedule a plumber visit'
   }
 ]
 
@@ -501,8 +501,8 @@ export const sampleMessages: Message[] = [
     id: 'msg-1',
     threadId: 'thread-2',
     senderType: 'tenant',
-    senderName: 'יוסי כהן',
-    body: 'שלום, רציתי לעדכן אותך לגבי שכר הדירה. היה לי תיקון רכב בלתי צפוי והחודש קצת קשה.',
+    senderName: 'Yossi Cohen',
+    body: "Hi, I wanted to update you about the rent. I had an unexpected car repair this month, it's been a bit tough.",
     createdAt: '2026-06-04T10:00:00Z',
     isInternalNote: false
   },
@@ -510,8 +510,8 @@ export const sampleMessages: Message[] = [
     id: 'msg-2',
     threadId: 'thread-2',
     senderType: 'landlord',
-    senderName: 'בעל הבית',
-    body: 'שלום יוסי, תודה שעדכנת. מתי אתה מצפה לשלם?',
+    senderName: 'Landlord',
+    body: 'Hi Yossi, thanks for letting me know. When do you expect to pay?',
     createdAt: '2026-06-04T14:30:00Z',
     isInternalNote: false
   },
@@ -519,8 +519,8 @@ export const sampleMessages: Message[] = [
     id: 'msg-3',
     threadId: 'thread-2',
     senderType: 'tenant',
-    senderName: 'יוסי כהן',
-    body: 'אשלם את שכר הדירה עד יום שישי, היה לי הוצאה בלתי צפויה',
+    senderName: 'Yossi Cohen',
+    body: "I'll pay the rent by Friday, I had an unexpected expense",
     createdAt: '2026-06-05T09:15:00Z',
     isInternalNote: false
   },
@@ -537,8 +537,8 @@ export const sampleMessages: Message[] = [
     id: 'msg-5',
     threadId: 'thread-5',
     senderType: 'tenant',
-    senderName: 'מיכל שפירא',
-    body: 'בוקר טוב. הדוד שמש התחיל להשמיע רעשי גוף אמש. הוא עדיין עובד אבל אני מודאגת שזו בעיה.',
+    senderName: 'Michal Shapira',
+    body: "Good morning. The solar boiler started making banging noises last night. It's still working but I'm worried it's a problem.",
     createdAt: '2026-06-05T07:45:00Z',
     isInternalNote: false
   },
@@ -546,8 +546,8 @@ export const sampleMessages: Message[] = [
     id: 'msg-6',
     threadId: 'thread-5',
     senderType: 'tenant',
-    senderName: 'מיכל שפירא',
-    body: 'הדוד שמש שוב משמיע רעשים מוזרים',
+    senderName: 'Michal Shapira',
+    body: 'The solar boiler is making strange noises again',
     createdAt: '2026-06-05T08:30:00Z',
     isInternalNote: false
   }
@@ -556,7 +556,7 @@ export const sampleMessages: Message[] = [
 export const sampleTasks: Task[] = [
   {
     id: 'task-1',
-    title: 'תיקון מזגן — משמיע רעש',
+    title: 'AC repair — making noise',
     propertyId: 'prop-1',
     tenantId: 'tenant-1',
     category: 'repair',
@@ -564,12 +564,12 @@ export const sampleTasks: Task[] = [
     dueDate: '2026-06-06',
     status: 'in-progress',
     contractorName: 'Cool Air HVAC',
-    notes: 'השוכרת דיווחה על רעש מהמזגן',
+    notes: 'Tenant reported noise from the AC unit',
     createdAt: '2026-06-02T10:00:00Z'
   },
   {
     id: 'task-2',
-    title: 'מעקב תשלום שכר דירה מאוחר',
+    title: 'Follow up on late rent payment',
     propertyId: 'prop-2',
     tenantId: 'tenant-2',
     category: 'payment-followup',
@@ -577,24 +577,24 @@ export const sampleTasks: Task[] = [
     dueDate: '2026-06-07',
     status: 'waiting-on-tenant',
     sourceThreadId: 'thread-2',
-    notes: 'השוכר אמר שישלם עד יום שישי',
+    notes: "Tenant said he'll pay by Friday",
     createdAt: '2026-06-04T15:00:00Z'
   },
   {
     id: 'task-3',
-    title: 'תיקון ברז דולף במטבח',
+    title: 'Fix leaking kitchen tap',
     propertyId: 'prop-2',
     tenantId: 'tenant-2',
     category: 'repair',
     priority: 'medium',
     dueDate: '2026-06-10',
     status: 'new',
-    notes: 'ברז כיור המטבח מטפטף',
+    notes: 'Kitchen sink tap is dripping',
     createdAt: '2026-06-03T09:00:00Z'
   },
   {
     id: 'task-4',
-    title: 'שיחה על חידוש חוזה',
+    title: 'Lease renewal discussion',
     propertyId: 'prop-3',
     tenantId: 'tenant-3',
     category: 'contract-renewal',
@@ -602,23 +602,23 @@ export const sampleTasks: Task[] = [
     dueDate: '2026-06-15',
     status: 'new',
     sourceThreadId: 'thread-3',
-    notes: 'השוכרת רוצה לחדש לעוד שנה',
+    notes: 'Tenant wants to renew for another year',
     createdAt: '2026-06-03T17:00:00Z'
   },
   {
     id: 'task-5',
-    title: 'הכנת דירה לשוכר חדש',
+    title: 'Prepare apartment for new tenant',
     propertyId: 'prop-4',
     category: 'maintenance',
     priority: 'high',
     dueDate: '2026-06-20',
     status: 'in-progress',
-    notes: 'ניקוי עמוק, תיקוני צבע, החלפת שטיח בחדר שינה',
+    notes: 'Deep clean, touch-up painting, replace bedroom carpet',
     createdAt: '2026-05-28T11:00:00Z'
   },
   {
     id: 'task-6',
-    title: 'החלפת סוללות גלאי עשן',
+    title: 'Replace smoke detector batteries',
     propertyId: 'prop-4',
     category: 'maintenance',
     priority: 'medium',
@@ -628,7 +628,7 @@ export const sampleTasks: Task[] = [
   },
   {
     id: 'task-7',
-    title: 'תיקון ידית שער שבורה',
+    title: 'Fix broken gate handle',
     propertyId: 'prop-4',
     category: 'repair',
     priority: 'low',
@@ -638,7 +638,7 @@ export const sampleTasks: Task[] = [
   },
   {
     id: 'task-8',
-    title: 'בדיקת דוד שמש',
+    title: 'Inspect solar boiler',
     propertyId: 'prop-6',
     tenantId: 'tenant-5',
     category: 'repair',
@@ -646,42 +646,42 @@ export const sampleTasks: Task[] = [
     dueDate: '2026-06-06',
     status: 'new',
     sourceThreadId: 'thread-5',
-    notes: 'משמיע רעשי גוף — לתאם שרברב',
+    notes: 'Making banging noises — arrange plumber',
     createdAt: '2026-06-05T08:45:00Z'
   },
   {
     id: 'task-9',
-    title: 'בדיקה שנתית',
+    title: 'Annual inspection',
     propertyId: 'prop-1',
     category: 'inspection',
     priority: 'low',
     dueDate: '2026-07-15',
     status: 'new',
-    notes: 'בדיקת נכס שנתית שגרתית',
+    notes: 'Routine annual property inspection',
     createdAt: '2026-06-01T09:00:00Z'
   }
 ]
 
 export const sampleVendors: Vendor[] = [
-  { id: 'vendor-1', name: 'Cool Air HVAC', phone: '+972501001001', email: 'service@coolair.co.il', category: 'ac-hvac', serviceArea: 'גוש דן', notes: 'מגיב מהר, מחירים טובים. לשאול עבור מיקי.', isPreferred: true },
-  { id: 'vendor-2', name: 'אינסטלציה בע"מ', phone: '+972502002002', email: 'info@plumbing.co.il', category: 'plumbing', serviceArea: 'תל אביב, חיפה', notes: 'שירות חירום 24/7', isPreferred: true },
-  { id: 'vendor-3', name: 'כל-תיקון', phone: '+972503003003', category: 'handyman', serviceArea: 'ירושלים', notes: 'טוב לתיקונים קטנים', isPreferred: false },
-  { id: 'vendor-4', name: 'ברק חשמל', phone: '+972504004004', email: 'jobs@barak.co.il', category: 'electrician', serviceArea: 'כל הארץ', isPreferred: true },
-  { id: 'vendor-5', name: 'צבע טרי', phone: '+972505005005', email: 'quotes@fresh.co.il', category: 'painting', serviceArea: 'מרכז', notes: 'משמש לסיבוב דירות. עבודה איכותית.', isPreferred: false },
-  { id: 'vendor-6', name: 'מנעולן מהיר', phone: '+972506006006', category: 'locksmith', serviceArea: 'תל אביב', notes: 'זמין 24/7', isPreferred: true },
-  { id: 'vendor-7', name: 'נקיון כסף', phone: '+972507007007', email: 'book@silver.co.il', category: 'cleaning', serviceArea: 'מרכז ודרום', notes: 'ניקוי עמוק לפינוי דירות', isPreferred: false },
-  { id: 'vendor-8', name: 'מומחי מכשירים', phone: '+972508008008', category: 'appliance-repair', serviceArea: 'כל הארץ', isPreferred: false }
+  { id: 'vendor-1', name: 'Cool Air HVAC', phone: '+972501001001', email: 'service@coolair.co.il', category: 'ac-hvac', serviceArea: 'Greater Tel Aviv', notes: 'Quick response, good rates. Ask for Mickey.', isPreferred: true },
+  { id: 'vendor-2', name: 'Premium Plumbing Ltd', phone: '+972502002002', email: 'info@plumbing.co.il', category: 'plumbing', serviceArea: 'Tel Aviv, Haifa', notes: '24/7 emergency service', isPreferred: true },
+  { id: 'vendor-3', name: 'AllFix Handyman', phone: '+972503003003', category: 'handyman', serviceArea: 'Jerusalem', notes: 'Good for small repairs', isPreferred: false },
+  { id: 'vendor-4', name: 'Barak Electric', phone: '+972504004004', email: 'jobs@barak.co.il', category: 'electrician', serviceArea: 'Nationwide', isPreferred: true },
+  { id: 'vendor-5', name: 'Fresh Paint', phone: '+972505005005', email: 'quotes@fresh.co.il', category: 'painting', serviceArea: 'Central', notes: 'Used for apartment turnovers. Quality work.', isPreferred: false },
+  { id: 'vendor-6', name: 'Quick Locksmith', phone: '+972506006006', category: 'locksmith', serviceArea: 'Tel Aviv', notes: 'Available 24/7', isPreferred: true },
+  { id: 'vendor-7', name: 'Silver Clean', phone: '+972507007007', email: 'book@silver.co.il', category: 'cleaning', serviceArea: 'Central & South', notes: 'Deep cleaning for apartment vacations', isPreferred: false },
+  { id: 'vendor-8', name: 'Appliance Experts', phone: '+972508008008', category: 'appliance-repair', serviceArea: 'Nationwide', isPreferred: false }
 ]
 
 export const sampleCalendarEvents: CalendarEvent[] = [
-  { id: 'event-1', title: 'מועד גביית שכר דירה — כל הנכסים', eventType: 'rent-due', start: '2026-07-01', notes: 'גביית שכר דירה חודשית' },
-  { id: 'event-2', title: 'חוזה מסתיים — 789 Market St 202', eventType: 'lease-end', propertyId: 'prop-3', tenantId: 'tenant-3', start: '2025-12-31', notes: 'Sarah Johnson — לדון בחידוש' },
-  { id: 'event-3', title: 'חוזה מסתיים — 888 Mission Blvd', eventType: 'lease-end', propertyId: 'prop-6', tenantId: 'tenant-5', start: '2025-11-30', notes: 'מיכל שפירא — חוזה פג' },
-  { id: 'event-4', title: 'תיקון מתוכנן — מזגן', eventType: 'scheduled-repair', propertyId: 'prop-1', taskId: 'task-1', start: '2026-06-06', notes: 'Cool Air HVAC — תיקון מזגן' },
-  { id: 'event-5', title: 'בדיקה שנתית — 123 Oak St', eventType: 'inspection', propertyId: 'prop-1', start: '2026-07-15', notes: 'בדיקת נכס שנתית שגרתית' },
-  { id: 'event-6', title: 'תזכורת חידוש חוזה — 789 Market St', eventType: 'renewal-reminder', propertyId: 'prop-3', tenantId: 'tenant-3', start: '2025-10-01', notes: '90 יום לפני סיום חוזה' },
-  { id: 'event-7', title: 'מועד גביית שכר דירה — כל הנכסים', eventType: 'rent-due', start: '2026-06-01', notes: 'גביית שכר דירה חודשית' },
-  { id: 'event-8', title: 'חוזה מסתיים — 123 Oak St 4A', eventType: 'lease-end', propertyId: 'prop-1', tenantId: 'tenant-1', start: '2026-02-28', notes: 'דנה לוי — חוזה מסתיים' }
+  { id: 'event-1', title: 'Rent collection — all properties', eventType: 'rent-due', start: '2026-07-01', notes: 'Monthly rent collection' },
+  { id: 'event-2', title: 'Lease ends — 789 Market St 202', eventType: 'lease-end', propertyId: 'prop-3', tenantId: 'tenant-3', start: '2025-12-31', notes: 'Sarah Johnson — discuss renewal' },
+  { id: 'event-3', title: 'Lease ends — 888 Mission Blvd', eventType: 'lease-end', propertyId: 'prop-6', tenantId: 'tenant-5', start: '2025-11-30', notes: 'Michal Shapira — lease expiring' },
+  { id: 'event-4', title: 'Scheduled repair — AC unit', eventType: 'scheduled-repair', propertyId: 'prop-1', taskId: 'task-1', start: '2026-06-06', notes: 'Cool Air HVAC — AC repair' },
+  { id: 'event-5', title: 'Annual inspection — 123 Oak St', eventType: 'inspection', propertyId: 'prop-1', start: '2026-07-15', notes: 'Routine annual property inspection' },
+  { id: 'event-6', title: 'Lease renewal reminder — 789 Market St', eventType: 'renewal-reminder', propertyId: 'prop-3', tenantId: 'tenant-3', start: '2025-10-01', notes: '90 days before lease end' },
+  { id: 'event-7', title: 'Rent collection — all properties', eventType: 'rent-due', start: '2026-06-01', notes: 'Monthly rent collection' },
+  { id: 'event-8', title: 'Lease ends — 123 Oak St 4A', eventType: 'lease-end', propertyId: 'prop-1', tenantId: 'tenant-1', start: '2026-02-28', notes: 'Dana Levy — lease ending' }
 ]
 
 // ─── Helper functions ─────────────────────────────────────────────────────────
@@ -719,7 +719,7 @@ export function getMessagesByThreadId(threadId: string): Message[] {
 }
 
 export function formatCurrency(amount: number, currency: string = 'ILS'): string {
-  return new Intl.NumberFormat('he-IL', {
+  return new Intl.NumberFormat('en-IL', {
     style: 'currency',
     currency,
     minimumFractionDigits: 0,
@@ -740,9 +740,9 @@ export function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
   const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-  if (diffInHours < 1) return 'עכשיו'
-  if (diffInHours < 24) return `לפני ${diffInHours}ש׳`
-  if (diffInHours < 48) return 'אתמול'
+  if (diffInHours < 1) return 'Just now'
+  if (diffInHours < 24) return `${diffInHours}h ago`
+  if (diffInHours < 48) return 'Yesterday'
   return formatDate(dateString)
 }
 
@@ -759,11 +759,11 @@ export function getPaymentStatusColor(status: PaymentStatus): string {
 
 export function getTaskStatusLabel(status: TaskStatus): string {
   switch (status) {
-    case 'new': return 'חדש'
-    case 'in-progress': return 'בטיפול'
-    case 'waiting-on-tenant': return 'ממתין לשוכר'
-    case 'waiting-on-vendor': return 'ממתין לקבלן'
-    case 'completed': return 'הושלם'
+    case 'new': return 'New'
+    case 'in-progress': return 'In progress'
+    case 'waiting-on-tenant': return 'Waiting on tenant'
+    case 'waiting-on-vendor': return 'Waiting on vendor'
+    case 'completed': return 'Completed'
     default: return status
   }
 }
@@ -780,26 +780,26 @@ export function getTaskPriorityColor(priority: TaskPriority): string {
 
 export function getVendorCategoryLabel(category: VendorCategory): string {
   switch (category) {
-    case 'ac-hvac': return 'מיזוג אוויר'
-    case 'electrician': return 'חשמלאי'
-    case 'plumbing': return 'אינסטלציה'
-    case 'painting': return 'צביעה'
-    case 'locksmith': return 'מנעולן'
-    case 'handyman': return 'כל-בו'
-    case 'cleaning': return 'ניקיון'
-    case 'appliance-repair': return 'תיקון מכשירים'
-    case 'pest-control': return 'הדברה'
+    case 'ac-hvac': return 'AC / HVAC'
+    case 'electrician': return 'Electrician'
+    case 'plumbing': return 'Plumbing'
+    case 'painting': return 'Painting'
+    case 'locksmith': return 'Locksmith'
+    case 'handyman': return 'Handyman'
+    case 'cleaning': return 'Cleaning'
+    case 'appliance-repair': return 'Appliance repair'
+    case 'pest-control': return 'Pest control'
     default: return category
   }
 }
 
 export function getDocumentTypeLabel(type: DocumentType): string {
   switch (type) {
-    case 'rental-contract': return 'חוזה שכירות'
-    case 'inventory': return 'מלאי'
-    case 'deposit-document': return 'מסמך פיקדון'
-    case 'keys-record': return 'רישום מפתחות'
-    case 'other': return 'אחר'
+    case 'rental-contract': return 'Rental contract'
+    case 'inventory': return 'Inventory'
+    case 'deposit-document': return 'Deposit document'
+    case 'keys-record': return 'Keys record'
+    case 'other': return 'Other'
     default: return type
   }
 }
@@ -875,14 +875,14 @@ export interface VendorRow {
 }
 
 const _vendorExtras: Record<string, { contactPerson: string; rating: number; activeJobs: number; completedJobs: number }> = {
-  'vendor-1': { contactPerson: 'מיקי', rating: 4.8, activeJobs: 2, completedJobs: 14 },
-  'vendor-2': { contactPerson: 'אינסטלציה', rating: 4.5, activeJobs: 1, completedJobs: 22 },
-  'vendor-3': { contactPerson: 'כל-תיקון', rating: 3.9, activeJobs: 0, completedJobs: 7 },
-  'vendor-4': { contactPerson: 'ברק חשמל', rating: 4.7, activeJobs: 3, completedJobs: 31 },
-  'vendor-5': { contactPerson: 'צבע טרי', rating: 4.2, activeJobs: 0, completedJobs: 9 },
-  'vendor-6': { contactPerson: 'מנעולן', rating: 4.6, activeJobs: 1, completedJobs: 18 },
-  'vendor-7': { contactPerson: 'נקיון כסף', rating: 4.3, activeJobs: 0, completedJobs: 12 },
-  'vendor-8': { contactPerson: 'מומחי מכשירים', rating: 4.0, activeJobs: 1, completedJobs: 6 },
+  'vendor-1': { contactPerson: 'Mickey', rating: 4.8, activeJobs: 2, completedJobs: 14 },
+  'vendor-2': { contactPerson: 'Plumbing Dept', rating: 4.5, activeJobs: 1, completedJobs: 22 },
+  'vendor-3': { contactPerson: 'All Repairs', rating: 3.9, activeJobs: 0, completedJobs: 7 },
+  'vendor-4': { contactPerson: 'Barak Electric', rating: 4.7, activeJobs: 3, completedJobs: 31 },
+  'vendor-5': { contactPerson: 'Fresh Paint', rating: 4.2, activeJobs: 0, completedJobs: 9 },
+  'vendor-6': { contactPerson: 'Quick Lock', rating: 4.6, activeJobs: 1, completedJobs: 18 },
+  'vendor-7': { contactPerson: 'Silver Clean', rating: 4.3, activeJobs: 0, completedJobs: 12 },
+  'vendor-8': { contactPerson: 'Appliance Experts', rating: 4.0, activeJobs: 1, completedJobs: 6 },
 }
 
 export const vendors: VendorRow[] = sampleVendors.map(v => {
@@ -906,7 +906,7 @@ export const vendors: VendorRow[] = sampleVendors.map(v => {
 
 /** Current landlord user — placeholder until a real /api/me endpoint exists */
 export const currentUser = {
-  name: 'בעל הבית',
+  name: 'Landlord',
   email: 'landlord@landed.co.il',
   role: 'Administrator',
   company: 'Landed Property Management',
