@@ -7,11 +7,23 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [landlords, tenants] = await Promise.all([
-      prisma.landlord.count(),
-      prisma.tenant.count(),
-    ]);
-    return NextResponse.json({ ok: true, db: "up", landlords, tenants });
+    const [landlords, tenants, linkedTenants, messages, maintenanceRequests] =
+      await Promise.all([
+        prisma.landlord.count(),
+        prisma.tenant.count(),
+        prisma.tenant.count({ where: { telegramChatId: { not: null } } }),
+        prisma.message.count(),
+        prisma.maintenanceRequest.count(),
+      ]);
+    return NextResponse.json({
+      ok: true,
+      db: "up",
+      landlords,
+      tenants,
+      linkedTenants,
+      messages,
+      maintenanceRequests,
+    });
   } catch (err) {
     return NextResponse.json(
       { ok: false, db: "down", error: (err as Error).message },
