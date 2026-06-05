@@ -34,6 +34,30 @@ const TENANTS = [
   },
 ];
 
+const MESSAGES = [
+  {
+    id: "message_seed_1",
+    tenantId: "tenant_seed_1",
+    direction: "inbound" as const,
+    body: "Hi, the kitchen sink is leaking again. Can someone come check it?",
+    detectedLanguage: "en",
+  },
+  {
+    id: "message_seed_2",
+    tenantId: "tenant_seed_1",
+    direction: "outbound" as const,
+    body: "Thanks for letting me know. I will check availability and follow up shortly.",
+    detectedLanguage: "en",
+  },
+  {
+    id: "message_seed_3",
+    tenantId: "tenant_seed_2",
+    direction: "inbound" as const,
+    body: "שלום, רציתי לוודא שקיבלת את התשלום של החודש.",
+    detectedLanguage: "he",
+  },
+];
+
 async function main() {
   const landlord = await prisma.landlord.upsert({
     where: { id: LANDLORD_ID },
@@ -66,7 +90,20 @@ async function main() {
     console.log(`  Tenant ready: ${tenant.name} — ${tenant.unitLabel} (${tenant.id})`);
   }
 
-  console.log("Seed complete: 1 landlord + 3 tenants.");
+  for (const message of MESSAGES) {
+    await prisma.message.upsert({
+      where: { id: message.id },
+      update: {
+        tenantId: message.tenantId,
+        direction: message.direction,
+        body: message.body,
+        detectedLanguage: message.detectedLanguage,
+      },
+      create: message,
+    });
+  }
+
+  console.log("Seed complete: 1 landlord + 3 tenants + sample messages.");
 }
 
 main()

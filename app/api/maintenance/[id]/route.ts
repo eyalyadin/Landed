@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { corsPreflight, jsonWithCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
 
 const VALID = new Set(["open", "in_progress", "resolved"]);
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 export async function PATCH(
   req: NextRequest,
@@ -14,7 +19,7 @@ export async function PATCH(
   const status = payload?.status;
 
   if (!status || !VALID.has(status)) {
-    return NextResponse.json({ error: "invalid status" }, { status: 400 });
+    return jsonWithCors(req, { error: "invalid status" }, { status: 400 });
   }
 
   try {
@@ -22,8 +27,8 @@ export async function PATCH(
       where: { id },
       data: { status: status as "open" | "in_progress" | "resolved" },
     });
-    return NextResponse.json({ ok: true, status: updated.status });
+    return jsonWithCors(req, { ok: true, status: updated.status });
   } catch {
-    return NextResponse.json({ error: "request not found" }, { status: 404 });
+    return jsonWithCors(req, { error: "request not found" }, { status: 404 });
   }
 }

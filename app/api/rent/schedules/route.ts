@@ -1,8 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISODateUTC, generateDueDates } from "@/lib/dates";
+import { corsPreflight, jsonWithCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 // POST /api/rent/schedules { tenantId, amount, dueDayOfMonth, startDate }
 // Creates a recurring schedule and generates 12 monthly pending invoices.
@@ -20,21 +25,21 @@ export async function POST(req: NextRequest) {
   const startDate = payload?.startDate ? parseISODateUTC(payload.startDate) : null;
 
   if (!tenantId) {
-    return NextResponse.json({ error: "tenantId is required" }, { status: 400 });
+    return jsonWithCors(req, { error: "tenantId is required" }, { status: 400 });
   }
   if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
+    return jsonWithCors(req, { error: "amount must be a positive number" }, { status: 400 });
   }
   if (!Number.isInteger(dueDayOfMonth) || dueDayOfMonth < 1 || dueDayOfMonth > 28) {
-    return NextResponse.json({ error: "dueDayOfMonth must be 1–28" }, { status: 400 });
+    return jsonWithCors(req, { error: "dueDayOfMonth must be 1–28" }, { status: 400 });
   }
   if (!startDate) {
-    return NextResponse.json({ error: "startDate must be YYYY-MM-DD" }, { status: 400 });
+    return jsonWithCors(req, { error: "startDate must be YYYY-MM-DD" }, { status: 400 });
   }
 
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   if (!tenant) {
-    return NextResponse.json({ error: "tenant not found" }, { status: 404 });
+    return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }
 
   const amountStr = amount.toFixed(2);
@@ -56,5 +61,5 @@ export async function POST(req: NextRequest) {
     return created;
   });
 
-  return NextResponse.json({ ok: true, scheduleId: schedule.id, invoices: dueDates.length });
+  return jsonWithCors(req, { ok: true, scheduleId: schedule.id, invoices: dueDates.length });
 }

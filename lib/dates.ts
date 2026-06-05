@@ -34,7 +34,7 @@ export function generateDueDates(
   dueDayOfMonth: number,
   count = 12,
 ): Date[] {
-  let year = startDate.getUTCFullYear();
+  const year = startDate.getUTCFullYear();
   let month = startDate.getUTCMonth();
   // If the due day this month already passed at start, begin next month.
   if (startDate.getUTCDate() > dueDayOfMonth) month += 1;

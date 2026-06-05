@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".claude/**",
+    ".claude-flow/**",
     // Prisma-generated client (output dir from schema.prisma).
     "app/generated/**",
   ]),

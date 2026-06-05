@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { corsPreflight, jsonWithCors } from "@/lib/cors";
 
 // Endpoints that authenticate themselves (Telegram secret / cron secret) or must
 // stay public, so they bypass the landlord cookie check.
@@ -13,6 +14,10 @@ const PUBLIC_API_PREFIXES = [
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  if (req.method === "OPTIONS" && pathname.startsWith("/api/")) {
+    return corsPreflight(req);
+  }
+
   if (pathname === "/login") return NextResponse.next();
   if (PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
@@ -22,7 +27,7 @@ export async function proxy(req: NextRequest) {
   if (authed) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
   }
   const url = req.nextUrl.clone();
   url.pathname = "/login";
