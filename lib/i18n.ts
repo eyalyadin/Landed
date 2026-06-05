@@ -42,6 +42,9 @@ export interface Dict {
     suggestError: string;
     sendError: string;
     notLinked: string;
+    autoReplyEnable: string;
+    autoReplyActive: string;
+    autoReplyError: string;
   };
   maintenance: {
     title: string;
@@ -105,6 +108,9 @@ const en: Dict = {
     suggestError: "Suggestion failed. Please try again.",
     sendError: "Failed to send. Please try again.",
     notLinked: "Tenant hasn't linked Telegram yet — messaging is unavailable.",
+    autoReplyEnable: "Auto-reply (AI): OFF",
+    autoReplyActive: "Auto-reply (AI): ON",
+    autoReplyError: "Failed to update auto-reply setting.",
   },
   maintenance: {
     title: "Maintenance Requests",
@@ -169,6 +175,9 @@ const he: Dict = {
     suggestError: "הצעה נכשלה, נסה שוב",
     sendError: "שליחה נכשלה, נסה שוב",
     notLinked: "השוכר עדיין לא קושר לטלגרם — אי אפשר לשלוח הודעה.",
+    autoReplyEnable: "מענה אוטומטי (AI): כבוי",
+    autoReplyActive: "מענה אוטומטי (AI): פעיל",
+    autoReplyError: "עדכון הגדרת המענה האוטומטי נכשל",
   },
   maintenance: {
     title: "בקשות תחזוקה",

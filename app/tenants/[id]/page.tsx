@@ -5,6 +5,7 @@ import { formatDateTime } from "@/lib/format";
 import { getDict } from "@/lib/i18n";
 import { getLocale } from "@/lib/i18n-server";
 import ReplyBox from "./ReplyBox";
+import AutoReplyToggle from "./AutoReplyToggle";
 import MaintenanceStatusSelect from "./MaintenanceStatusSelect";
 import RentSection from "./RentSection";
 
@@ -118,7 +119,8 @@ export default async function TenantThread({
           })}
         </div>
 
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col gap-2">
+          <AutoReplyToggle tenantId={tenant.id} autoReply={tenant.autoReply} />
           <ReplyBox tenantId={tenant.id} linked={Boolean(tenant.telegramChatId)} />
         </div>
       </section>

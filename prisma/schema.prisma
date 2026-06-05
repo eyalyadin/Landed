@@ -46,6 +46,7 @@ model Tenant {
   telegramChatId    String?  @unique // null until the tenant links via /start
   linkToken         String   @unique
   preferredLanguage String? // e.g. "he" | "en"
+  autoReply         Boolean  @default(false)
   createdAt         DateTime @default(now())
 
   landlord            Landlord             @relation(fields: [landlordId], references: [id], onDelete: Cascade)

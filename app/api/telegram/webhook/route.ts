@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMessage } from "@/lib/telegram";
 import { detectLanguage } from "@/lib/lang";
+import { suggestReply } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 5. Text → store an inbound message.
+    // 5. Text → store an inbound message, then auto-reply if enabled.
     if (text) {
       await prisma.message.create({
         data: {
@@ -109,6 +110,29 @@ export async function POST(req: NextRequest) {
           telegramMessageId: String(msg.message_id),
         },
       });
+
+      if (tenant.autoReply) {
+        try {
+          const recent = await prisma.message.findMany({
+            where: { tenantId: tenant.id },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          });
+          const history = recent.reverse().map((m) => ({ direction: m.direction, body: m.body }));
+          const reply = await suggestReply(history);
+          await sendMessage(chatId, reply);
+          await prisma.message.create({
+            data: {
+              tenantId: tenant.id,
+              direction: "outbound",
+              body: reply,
+            },
+          });
+        } catch (err) {
+          console.error("auto-reply failed:", err);
+        }
+      }
+
       return NextResponse.json({ ok: true });
     }
 
