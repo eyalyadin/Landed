@@ -2,16 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
+import { dec, dateIso } from "@/lib/serialize";
 import ReplyBox from "./ReplyBox";
 import MaintenanceStatusSelect from "./MaintenanceStatusSelect";
 import RentSection from "./RentSection";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  open: "פתוח",
+const JOB_STATUS_LABEL: Record<string, string> = {
+  new: "חדש",
   in_progress: "בטיפול",
-  resolved: "טופל",
+  waiting_on_tenant: "ממתין לשוכר",
+  waiting_on_vendor: "ממתין לקבלן",
+  completed: "הושלם",
 };
 
 export default async function TenantThread({
@@ -20,47 +23,66 @@ export default async function TenantThread({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const tenantId = parseInt(id, 10);
+  if (!Number.isFinite(tenantId)) notFound();
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id },
+    where: { id: tenantId },
     include: {
-      messages: { orderBy: { createdAt: "asc" } },
-      maintenanceRequests: {
+      property: { select: { address: true, unitLabel: true } },
+      thread: {
+        include: {
+          messages: { orderBy: { createdAt: "asc" } },
+        },
+      },
+      jobs: {
         orderBy: { createdAt: "desc" },
-        include: { photos: { orderBy: { createdAt: "asc" } } },
+        include: { attachments: { orderBy: { createdAt: "asc" } } },
       },
       rentSchedules: { orderBy: { startDate: "desc" } },
-      rentInvoices: { orderBy: { dueDate: "asc" } },
+      payments: {
+        where: { type: "rent" },
+        orderBy: { dueDate: "asc" },
+      },
     },
   });
 
   if (!tenant) notFound();
 
-  // Plain, serializable shapes for the client rent section (Decimal/Date → number/string).
   const schedules = tenant.rentSchedules.map((s) => ({
-    id: s.id,
-    amount: Number(s.amount),
+    id: String(s.id),
+    amount: dec(s.amount),
     dueDayOfMonth: s.dueDayOfMonth,
     startDate: s.startDate.toISOString(),
     active: s.active,
   }));
-  const invoices = tenant.rentInvoices.map((inv) => ({
-    id: inv.id,
-    amount: Number(inv.amount),
-    dueDate: inv.dueDate.toISOString(),
-    status: inv.status as "pending" | "paid" | "overdue",
-    paidDate: inv.paidDate ? inv.paidDate.toISOString() : null,
+
+  const invoices = tenant.payments.map((p) => ({
+    id: String(p.id),
+    amount: dec(p.amount),
+    dueDate: p.dueDate.toISOString(),
+    status: p.status as "pending" | "paid" | "overdue",
+    paidDate: dateIso(p.paidDate),
   }));
+
+  const unitLabel = tenant.property?.unitLabel ?? "";
+  const propertyAddress = tenant.property?.address ?? "";
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
-            ← חזרה לרשימה
+          <Link href="/tenants" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
+            ← חזרה לרשימת השוכרים
           </Link>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            {tenant.name} <span className="text-base text-zinc-500">· {tenant.unitLabel}</span>
+            {tenant.name}
+            {(propertyAddress || unitLabel) && (
+              <span className="text-base text-zinc-500">
+                {" · "}
+                {[propertyAddress, unitLabel].filter(Boolean).join(" ")}
+              </span>
+            )}
           </h1>
         </div>
         <span
@@ -77,16 +99,13 @@ export default async function TenantThread({
       {/* Message thread */}
       <section className="mb-6">
         <div className="flex flex-col gap-2 rounded-xl border border-black/[.08] bg-zinc-50 p-4 dark:border-white/[.145] dark:bg-zinc-900/40">
-          {tenant.messages.length === 0 && (
+          {(!tenant.thread || tenant.thread.messages.length === 0) && (
             <p className="py-8 text-center text-sm text-zinc-400">אין הודעות עדיין</p>
           )}
-          {tenant.messages.map((m) => {
+          {tenant.thread?.messages.map((m) => {
             const outbound = m.direction === "outbound";
             return (
-              <div
-                key={m.id}
-                className={`flex ${outbound ? "justify-end" : "justify-start"}`}
-              >
+              <div key={m.id} className={`flex ${outbound ? "justify-end" : "justify-start"}`}>
                 <div
                   dir="auto"
                   className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
@@ -96,11 +115,7 @@ export default async function TenantThread({
                   }`}
                 >
                   <div className="whitespace-pre-wrap break-words">{m.body}</div>
-                  <div
-                    className={`mt-1 text-[10px] ${
-                      outbound ? "text-blue-100" : "text-zinc-400"
-                    }`}
-                  >
+                  <div className={`mt-1 text-[10px] ${outbound ? "text-blue-100" : "text-zinc-400"}`}>
                     {formatDateTime(m.createdAt)}
                   </div>
                 </div>
@@ -110,51 +125,45 @@ export default async function TenantThread({
         </div>
 
         <div className="mt-3">
-          <ReplyBox tenantId={tenant.id} linked={Boolean(tenant.telegramChatId)} />
+          <ReplyBox tenantId={String(tenant.id)} linked={Boolean(tenant.telegramChatId)} />
         </div>
       </section>
 
-      {/* Maintenance */}
+      {/* Jobs (maintenance) */}
       <section>
         <h2 className="mb-3 text-lg font-semibold">בקשות תחזוקה</h2>
-        {tenant.maintenanceRequests.length === 0 ? (
+        {tenant.jobs.length === 0 ? (
           <p className="text-sm text-zinc-400">אין בקשות תחזוקה</p>
         ) : (
           <ul className="space-y-3">
-            {tenant.maintenanceRequests.map((r) => (
+            {tenant.jobs.map((job) => (
               <li
-                key={r.id}
+                key={job.id}
                 className="rounded-xl border border-black/[.08] bg-white p-4 dark:border-white/[.145] dark:bg-zinc-950"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p dir="auto" className="font-medium">
-                      {r.title}
-                    </p>
-                    {r.description && (
-                      <p dir="auto" className="mt-0.5 text-sm text-zinc-500">
-                        {r.description}
-                      </p>
+                    <p dir="auto" className="font-medium">{job.title}</p>
+                    {job.description && (
+                      <p dir="auto" className="mt-0.5 text-sm text-zinc-500">{job.description}</p>
                     )}
-                    <p className="mt-1 text-xs text-zinc-400">
-                      {formatDateTime(r.createdAt)}
-                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">{formatDateTime(job.createdAt)}</p>
                   </div>
                   <MaintenanceStatusSelect
-                    requestId={r.id}
-                    status={r.status}
-                    label={STATUS_LABEL[r.status] ?? r.status}
+                    requestId={String(job.id)}
+                    status={job.status}
+                    label={JOB_STATUS_LABEL[job.status] ?? job.status}
                   />
                 </div>
 
-                {r.photos.length > 0 && (
+                {job.attachments.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {r.photos.map((p) => (
+                    {job.attachments.map((att) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        key={p.id}
-                        src={`/api/photo/${encodeURIComponent(p.telegramFileId)}`}
-                        alt={p.caption ?? "תמונת תחזוקה"}
+                        key={att.id}
+                        src={`/api/photo/${encodeURIComponent(att.telegramFileId)}`}
+                        alt={att.caption ?? "תמונת תחזוקה"}
                         className="h-28 w-28 rounded-lg object-cover"
                       />
                     ))}
@@ -169,7 +178,7 @@ export default async function TenantThread({
       {/* Rent */}
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">שכר דירה</h2>
-        <RentSection tenantId={tenant.id} schedules={schedules} invoices={invoices} />
+        <RentSection tenantId={String(tenant.id)} schedules={schedules} invoices={invoices} />
       </section>
     </main>
   );

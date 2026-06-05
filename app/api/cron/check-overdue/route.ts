@@ -14,7 +14,6 @@ function reminderText(lang: string | null, count: number, total: number): string
       `Please arrange payment as soon as possible. Thank you!`
     );
   }
-  // Default to Hebrew.
   return (
     `תזכורת ידידותית: יש ${count} תשלומי שכר דירה באיחור בסך ${amount}. ` +
     `נא להסדיר את התשלום בהקדם האפשרי. תודה!`
@@ -29,10 +28,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // "Today" must be the Israel calendar date even though cron fires in UTC.
   const today = jerusalemTodayUTCDate();
 
-  const newlyOverdue = await prisma.rentInvoice.findMany({
+  const newlyOverdue = await prisma.payment.findMany({
     where: { status: "pending", dueDate: { lt: today } },
     include: { tenant: true },
   });
@@ -46,32 +44,30 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  await prisma.rentInvoice.updateMany({
-    where: { id: { in: newlyOverdue.map((i) => i.id) } },
+  await prisma.payment.updateMany({
+    where: { id: { in: newlyOverdue.map((p) => p.id) } },
     data: { status: "overdue" },
   });
 
-  // Group affected invoices by tenant.
   const byTenant = new Map<
-    string,
+    number,
     { chatId: string | null; lang: string | null; count: number; total: number }
   >();
-  for (const inv of newlyOverdue) {
-    const entry =
-      byTenant.get(inv.tenantId) ?? {
-        chatId: inv.tenant.telegramChatId,
-        lang: inv.tenant.preferredLanguage,
-        count: 0,
-        total: 0,
-      };
+  for (const pay of newlyOverdue) {
+    const entry = byTenant.get(pay.tenantId) ?? {
+      chatId: pay.tenant.telegramChatId,
+      lang: pay.tenant.preferredLanguage,
+      count: 0,
+      total: 0,
+    };
     entry.count += 1;
-    entry.total += Number(inv.amount);
-    byTenant.set(inv.tenantId, entry);
+    entry.total += Number(pay.amount);
+    byTenant.set(pay.tenantId, entry);
   }
 
   let remindersSent = 0;
   for (const { chatId, lang, count, total } of byTenant.values()) {
-    if (!chatId) continue; // unlinked tenant — nothing to send
+    if (!chatId) continue;
     try {
       await sendMessage(chatId, reminderText(lang, count, total));
       remindersSent += 1;

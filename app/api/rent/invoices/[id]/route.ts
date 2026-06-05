@@ -16,6 +16,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const paymentId = parseInt(id, 10);
+  if (!Number.isFinite(paymentId)) {
+    return jsonWithCors(req, { error: "invalid id" }, { status: 400 });
+  }
+
   const payload = (await req.json().catch(() => null)) as { status?: string } | null;
   const status = payload?.status;
 
@@ -24,8 +29,8 @@ export async function PATCH(
   }
 
   try {
-    const updated = await prisma.rentInvoice.update({
-      where: { id },
+    const updated = await prisma.payment.update({
+      where: { id: paymentId },
       data: {
         status,
         paidDate: status === "paid" ? jerusalemTodayUTCDate() : null,
@@ -33,6 +38,6 @@ export async function PATCH(
     });
     return jsonWithCors(req, { ok: true, status: updated.status });
   } catch {
-    return jsonWithCors(req, { error: "invoice not found" }, { status: 404 });
+    return jsonWithCors(req, { error: "payment not found" }, { status: 404 });
   }
 }

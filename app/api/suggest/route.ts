@@ -11,20 +11,28 @@ export async function OPTIONS(req: NextRequest) {
 
 // POST /api/suggest { tenantId } → AI-suggested reply in the tenant's language.
 export async function POST(req: NextRequest) {
-  const payload = (await req.json().catch(() => null)) as { tenantId?: string } | null;
-  const tenantId = payload?.tenantId;
-  if (!tenantId) {
+  const payload = (await req.json().catch(() => null)) as { tenantId?: number | string } | null;
+  const rawId = payload?.tenantId;
+  const tenantId = rawId !== undefined ? Number(rawId) : NaN;
+
+  if (!Number.isFinite(tenantId)) {
     return jsonWithCors(req, { error: "tenantId is required" }, { status: 400 });
   }
 
-  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    include: { thread: true },
+  });
   if (!tenant) {
     return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }
+  if (!tenant.thread) {
+    return jsonWithCors(req, { error: "tenant has no message thread" }, { status: 409 });
+  }
 
-  // Last ~10 messages, oldest → newest for a natural transcript.
+  // Last ~10 messages from the thread, oldest → newest for a natural transcript.
   const recent = await prisma.message.findMany({
-    where: { tenantId },
+    where: { threadId: tenant.thread.id },
     orderBy: { createdAt: "desc" },
     take: 10,
   });

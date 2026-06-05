@@ -5,7 +5,6 @@ import { detectLanguage } from "@/lib/lang";
 
 export const dynamic = "force-dynamic";
 
-// Minimal shape of the Telegram updates we handle.
 type TgPhotoSize = { file_id: string; width: number; height: number };
 type TgMessage = {
   message_id: number;
@@ -29,7 +28,6 @@ const PHOTO_ACK =
   `Got your photo and opened a maintenance request for you. Thanks!`;
 
 export async function POST(req: NextRequest) {
-  // 1. Verify the secret header — reject anything that isn't from our Telegram webhook.
   const secret = req.headers.get("x-telegram-bot-api-secret-token");
   const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!expected || secret !== expected) {
@@ -50,7 +48,7 @@ export async function POST(req: NextRequest) {
     const chatId = String(msg.chat.id);
     const text = msg.text;
 
-    // 2. /start <token> → link this chat to the matching tenant.
+    // /start <token> → link this chat to the matching tenant.
     if (text && text.startsWith("/start")) {
       const linkToken = text.split(/\s+/)[1];
       if (linkToken) {
@@ -68,53 +66,68 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 3. For everything else, the chat must already be linked.
+    // For everything else, the chat must be linked.
     const tenant = await prisma.tenant.findUnique({
       where: { telegramChatId: chatId },
+      include: { thread: true },
     });
     if (!tenant) {
       await sendMessage(chatId, NEED_LINK);
       return NextResponse.json({ ok: true });
     }
 
-    // 4. Photo → maintenance request (+ photo with the largest file_id).
+    // Photo → Job + JobAttachment.
     if (msg.photo && msg.photo.length > 0) {
-      const largest = msg.photo[msg.photo.length - 1]; // Telegram orders smallest→largest
+      const largest = msg.photo[msg.photo.length - 1];
       const caption = msg.caption?.trim();
-      await prisma.maintenanceRequest.create({
-        data: {
-          tenantId: tenant.id,
-          title: caption || "Maintenance request",
-          status: "open",
-          photos: {
-            create: {
-              telegramFileId: largest.file_id,
-              caption: caption || null,
+      const propertyId = tenant.propertyId;
+      if (propertyId) {
+        await prisma.job.create({
+          data: {
+            propertyId,
+            tenantId: tenant.id,
+            title: caption || "Maintenance request",
+            category: "repair",
+            status: "new",
+            attachments: {
+              create: {
+                telegramFileId: largest.file_id,
+                caption: caption || null,
+              },
             },
           },
-        },
-      });
+        });
+      }
       await sendMessage(chatId, PHOTO_ACK);
       return NextResponse.json({ ok: true });
     }
 
-    // 5. Text → store an inbound message.
-    if (text) {
-      await prisma.message.create({
-        data: {
-          tenantId: tenant.id,
-          direction: "inbound",
-          body: text,
-          detectedLanguage: detectLanguage(text),
-          telegramMessageId: String(msg.message_id),
-        },
-      });
-      return NextResponse.json({ ok: true });
+    // Text → store an inbound message in the tenant's thread.
+    if (text && tenant.thread) {
+      const thread = tenant.thread;
+      await prisma.$transaction([
+        prisma.message.create({
+          data: {
+            threadId: thread.id,
+            tenantId: tenant.id,
+            direction: "inbound",
+            body: text,
+            detectedLanguage: detectLanguage(text),
+            telegramMessageId: String(msg.message_id),
+          },
+        }),
+        prisma.messageThread.update({
+          where: { id: thread.id },
+          data: {
+            unreadCount: { increment: 1 },
+            lastMessageAt: new Date(),
+          },
+        }),
+      ]);
     }
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    // Log and still return 200 so Telegram doesn't enter an aggressive retry loop.
     console.error("telegram webhook error:", err);
     return NextResponse.json({ ok: true });
   }

@@ -10,21 +10,22 @@ export async function OPTIONS(req: NextRequest) {
 }
 
 // POST /api/rent/schedules { tenantId, amount, dueDayOfMonth, startDate }
-// Creates a recurring schedule and generates 12 monthly pending invoices.
+// Creates a recurring schedule and generates 12 monthly pending payments.
 export async function POST(req: NextRequest) {
   const payload = (await req.json().catch(() => null)) as {
-    tenantId?: string;
+    tenantId?: number | string;
     amount?: number | string;
     dueDayOfMonth?: number;
     startDate?: string;
   } | null;
 
-  const tenantId = payload?.tenantId;
+  const rawId = payload?.tenantId;
+  const tenantId = rawId !== undefined ? Number(rawId) : NaN;
   const amount = Number(payload?.amount);
   const dueDayOfMonth = Number(payload?.dueDayOfMonth);
   const startDate = payload?.startDate ? parseISODateUTC(payload.startDate) : null;
 
-  if (!tenantId) {
+  if (!Number.isFinite(tenantId)) {
     return jsonWithCors(req, { error: "tenantId is required" }, { status: 400 });
   }
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
   if (!tenant) {
     return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }
+  const propertyId = tenant.propertyId;
+  if (!propertyId) {
+    return jsonWithCors(req, { error: "tenant is not linked to a property" }, { status: 409 });
+  }
 
   const amountStr = amount.toFixed(2);
   const dueDates = generateDueDates(startDate, dueDayOfMonth, 12);
@@ -49,17 +54,25 @@ export async function POST(req: NextRequest) {
     const created = await tx.rentSchedule.create({
       data: { tenantId, amount: amountStr, dueDayOfMonth, startDate, active: true },
     });
-    await tx.rentInvoice.createMany({
+    await tx.payment.createMany({
       data: dueDates.map((dueDate) => ({
         tenantId,
+        propertyId,
         rentScheduleId: created.id,
         dueDate,
         amount: amountStr,
+        currency: "ILS",
+        type: "rent" as const,
         status: "pending" as const,
       })),
     });
     return created;
   });
 
-  return jsonWithCors(req, { ok: true, scheduleId: schedule.id, invoices: dueDates.length });
+  return jsonWithCors(req, {
+    ok: true,
+    scheduleId: schedule.id,
+    payments: dueDates.length,
+    invoices: dueDates.length,
+  });
 }

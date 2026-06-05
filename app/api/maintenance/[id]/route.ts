@@ -4,31 +4,45 @@ import { corsPreflight, jsonWithCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
 
-const VALID = new Set(["open", "in_progress", "resolved"]);
+const STATUS_MAP = new Map([
+  ["open", "new"],
+  ["resolved", "completed"],
+  ["new", "new"],
+  ["in_progress", "in_progress"],
+  ["waiting_on_tenant", "waiting_on_tenant"],
+  ["waiting_on_vendor", "waiting_on_vendor"],
+  ["completed", "completed"],
+]);
 
 export async function OPTIONS(req: NextRequest) {
   return corsPreflight(req);
 }
 
+// PATCH /api/maintenance/[id] { status } — kept for backward compat (prefer /api/jobs/[id])
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const payload = (await req.json().catch(() => null)) as { status?: string } | null;
-  const status = payload?.status;
+  const jobId = parseInt(id, 10);
+  if (!Number.isFinite(jobId)) {
+    return jsonWithCors(req, { error: "invalid id" }, { status: 400 });
+  }
 
-  if (!status || !VALID.has(status)) {
+  const payload = (await req.json().catch(() => null)) as { status?: string } | null;
+  const status = payload?.status ? STATUS_MAP.get(payload.status) : undefined;
+
+  if (!status) {
     return jsonWithCors(req, { error: "invalid status" }, { status: 400 });
   }
 
   try {
-    const updated = await prisma.maintenanceRequest.update({
-      where: { id },
-      data: { status: status as "open" | "in_progress" | "resolved" },
+    const updated = await prisma.job.update({
+      where: { id: jobId },
+      data: { status: status as "new" | "in_progress" | "waiting_on_tenant" | "waiting_on_vendor" | "completed" },
     });
     return jsonWithCors(req, { ok: true, status: updated.status });
   } catch {
-    return jsonWithCors(req, { error: "request not found" }, { status: 404 });
+    return jsonWithCors(req, { error: "job not found" }, { status: 404 });
   }
 }
