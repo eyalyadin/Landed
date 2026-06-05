@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
 import ReplyBox from "./ReplyBox";
 import MaintenanceStatusSelect from "./MaintenanceStatusSelect";
+import RentSection from "./RentSection";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,28 @@ export default async function TenantThread({
         orderBy: { createdAt: "desc" },
         include: { photos: { orderBy: { createdAt: "asc" } } },
       },
+      rentSchedules: { orderBy: { startDate: "desc" } },
+      rentInvoices: { orderBy: { dueDate: "asc" } },
     },
   });
 
   if (!tenant) notFound();
+
+  // Plain, serializable shapes for the client rent section (Decimal/Date → number/string).
+  const schedules = tenant.rentSchedules.map((s) => ({
+    id: s.id,
+    amount: Number(s.amount),
+    dueDayOfMonth: s.dueDayOfMonth,
+    startDate: s.startDate.toISOString(),
+    active: s.active,
+  }));
+  const invoices = tenant.rentInvoices.map((inv) => ({
+    id: inv.id,
+    amount: Number(inv.amount),
+    dueDate: inv.dueDate.toISOString(),
+    status: inv.status as "pending" | "paid" | "overdue",
+    paidDate: inv.paidDate ? inv.paidDate.toISOString() : null,
+  }));
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-8">
@@ -145,6 +164,12 @@ export default async function TenantThread({
             ))}
           </ul>
         )}
+      </section>
+
+      {/* Rent */}
+      <section className="mt-8">
+        <h2 className="mb-3 text-lg font-semibold">שכר דירה</h2>
+        <RentSection tenantId={tenant.id} schedules={schedules} invoices={invoices} />
       </section>
     </main>
   );

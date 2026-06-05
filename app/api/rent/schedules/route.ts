@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { parseISODateUTC, generateDueDates } from "@/lib/dates";
+
+export const dynamic = "force-dynamic";
+
+// POST /api/rent/schedules { tenantId, amount, dueDayOfMonth, startDate }
+// Creates a recurring schedule and generates 12 monthly pending invoices.
+export async function POST(req: NextRequest) {
+  const payload = (await req.json().catch(() => null)) as {
+    tenantId?: string;
+    amount?: number | string;
+    dueDayOfMonth?: number;
+    startDate?: string;
+  } | null;
+
+  const tenantId = payload?.tenantId;
+  const amount = Number(payload?.amount);
+  const dueDayOfMonth = Number(payload?.dueDayOfMonth);
+  const startDate = payload?.startDate ? parseISODateUTC(payload.startDate) : null;
+
+  if (!tenantId) {
+    return NextResponse.json({ error: "tenantId is required" }, { status: 400 });
+  }
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return NextResponse.json({ error: "amount must be a positive number" }, { status: 400 });
+  }
+  if (!Number.isInteger(dueDayOfMonth) || dueDayOfMonth < 1 || dueDayOfMonth > 28) {
+    return NextResponse.json({ error: "dueDayOfMonth must be 1–28" }, { status: 400 });
+  }
+  if (!startDate) {
+    return NextResponse.json({ error: "startDate must be YYYY-MM-DD" }, { status: 400 });
+  }
+
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  if (!tenant) {
+    return NextResponse.json({ error: "tenant not found" }, { status: 404 });
+  }
+
+  const amountStr = amount.toFixed(2);
+  const dueDates = generateDueDates(startDate, dueDayOfMonth, 12);
+
+  const schedule = await prisma.$transaction(async (tx) => {
+    const created = await tx.rentSchedule.create({
+      data: { tenantId, amount: amountStr, dueDayOfMonth, startDate, active: true },
+    });
+    await tx.rentInvoice.createMany({
+      data: dueDates.map((dueDate) => ({
+        tenantId,
+        rentScheduleId: created.id,
+        dueDate,
+        amount: amountStr,
+        status: "pending" as const,
+      })),
+    });
+    return created;
+  });
+
+  return NextResponse.json({ ok: true, scheduleId: schedule.id, invoices: dueDates.length });
+}
