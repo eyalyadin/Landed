@@ -19,6 +19,18 @@ function generateDueDates(startDate: Date, dueDayOfMonth: number, count: number)
 async function main() {
   console.log("Starting seed...");
 
+  // Truncate all tables and reset identity sequences so the seed is safe to re-run.
+  await prisma.$executeRawUnsafe(`
+    TRUNCATE TABLE
+      "CalendarEvent", "Payment", "RentSchedule",
+      "JobAttachment", "Job",
+      "Document", "Vendor",
+      "Message", "MessageThread",
+      "Tenant", "Property", "Landlord"
+    RESTART IDENTITY CASCADE
+  `);
+  console.log("Tables cleared.");
+
   // ── Landlord ──────────────────────────────────────────────────────────────
   const landlord = await prisma.landlord.create({ data: { name: "בעל הבית" } });
   console.log(`Landlord: ${landlord.name} (id=${landlord.id})`);
