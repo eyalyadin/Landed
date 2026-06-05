@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +8,125 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------- Enums ----------
+
+enum MessageDirection {
+  inbound
+  outbound
+}
+
+enum MaintenanceStatus {
+  open
+  in_progress
+  resolved
+}
+
+enum InvoiceStatus {
+  pending
+  paid
+  overdue
+}
+
+// ---------- Models ----------
+
+model Landlord {
+  id      String   @id @default(cuid())
+  name    String
+  tenants Tenant[]
+}
+
+model Tenant {
+  id                String   @id @default(cuid())
+  landlordId        String
+  name              String
+  unitLabel         String
+  phone             String?
+  telegramChatId    String?  @unique // null until the tenant links via /start
+  linkToken         String   @unique
+  preferredLanguage String? // e.g. "he" | "en"
+  createdAt         DateTime @default(now())
+
+  landlord            Landlord             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  messages            Message[]
+  maintenanceRequests MaintenanceRequest[]
+  rentSchedules       RentSchedule[]
+  rentInvoices        RentInvoice[]
+
+  @@index([landlordId])
+}
+
+model Message {
+  id                String           @id @default(cuid())
+  tenantId          String
+  direction         MessageDirection
+  body              String
+  detectedLanguage  String?
+  telegramMessageId String?
+  createdAt         DateTime         @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+}
+
+model MaintenanceRequest {
+  id          String            @id @default(cuid())
+  tenantId    String
+  title       String
+  description String?
+  status      MaintenanceStatus @default(open)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tenant Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  photos MaintenancePhoto[]
+
+  @@index([tenantId])
+}
+
+model MaintenancePhoto {
+  id                   String   @id @default(cuid())
+  maintenanceRequestId String
+  telegramFileId       String
+  caption              String?
+  createdAt            DateTime @default(now())
+
+  maintenanceRequest MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Cascade)
+
+  @@index([maintenanceRequestId])
+}
+
+model RentSchedule {
+  id            String    @id @default(cuid())
+  tenantId      String
+  amount        Decimal   @db.Decimal(10, 2) // ILS
+  dueDayOfMonth Int // 1-28
+  startDate     DateTime  @db.Date
+  endDate       DateTime? @db.Date
+  active        Boolean   @default(true)
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices RentInvoice[]
+
+  @@index([tenantId])
+}
+
+model RentInvoice {
+  id             String        @id @default(cuid())
+  tenantId       String
+  rentScheduleId String
+  dueDate        DateTime      @db.Date // a calendar day, not a timestamp
+  amount         Decimal       @db.Decimal(10, 2)
+  status         InvoiceStatus @default(pending)
+  paidDate       DateTime?     @db.Date
+  createdAt      DateTime      @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rentSchedule RentSchedule @relation(fields: [rentScheduleId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([rentScheduleId])
+  @@index([status, dueDate])
 }
