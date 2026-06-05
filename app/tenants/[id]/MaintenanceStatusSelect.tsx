@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const OPTIONS: { value: string; label: string }[] = [
-  { value: "open", label: "פתוח" },
-  { value: "in_progress", label: "בטיפול" },
-  { value: "resolved", label: "טופל" },
-];
+import { useI18n } from "@/app/i18n-context";
 
 export default function MaintenanceStatusSelect({
   requestId,
@@ -17,6 +12,7 @@ export default function MaintenanceStatusSelect({
   status: string;
   label?: string;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [value, setValue] = useState(status);
   const [saving, setSaving] = useState(false);
@@ -43,13 +39,11 @@ export default function MaintenanceStatusSelect({
       value={value}
       disabled={saving}
       onChange={(e) => onChange(e.target.value)}
-      className="pixel-input w-auto shrink-0 cursor-pointer"
+      className="input w-auto shrink-0 cursor-pointer"
     >
-      {OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
+      <option value="open">{t.maintenance.status.open}</option>
+      <option value="in_progress">{t.maintenance.status.in_progress}</option>
+      <option value="resolved">{t.maintenance.status.resolved}</option>
     </select>
   );
 }

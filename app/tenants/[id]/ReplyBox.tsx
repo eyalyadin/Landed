@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/app/i18n-context";
 
 export default function ReplyBox({
   tenantId,
@@ -10,6 +11,7 @@ export default function ReplyBox({
   tenantId: string;
   linked: boolean;
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
@@ -29,8 +31,7 @@ export default function ReplyBox({
       const data = await res.json();
       setBody(data.suggestion ?? "");
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "הצעה נכשלה / suggestion failed");
+      setError(t.thread.suggestError);
     }
   }
 
@@ -48,34 +49,41 @@ export default function ReplyBox({
       setBody("");
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "שליחה נכשלה / failed to send");
+      setError(t.thread.sendError);
     }
   }
 
   if (!linked) {
     return (
-      <div className="border-2 border-dashed border-ink bg-surface px-4 py-3 text-center text-sm text-muted">
-        השוכר עדיין לא קושר לטלגרם — אי אפשר לשלוח הודעה.
+      <div
+        className="rounded-lg border px-4 py-3 text-center text-sm"
+        style={{
+          borderColor: "var(--border)",
+          borderStyle: "dashed",
+          background: "var(--surface)",
+          color: "var(--muted)",
+        }}
+      >
+        {t.thread.notLinked}
       </div>
     );
   }
 
   return (
-    <div className="pixel-card p-3">
+    <div className="card p-3">
       <textarea
         dir="auto"
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="כתוב תשובה…"
+        placeholder={t.thread.replyPlaceholder}
         rows={3}
-        className="pixel-input"
+        className="input"
         onKeyDown={(e) => {
           if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send();
         }}
       />
       {error && (
-        <p className="mt-2 text-sm font-medium" style={{ color: "#DC2626" }}>
+        <p className="mt-2 text-sm font-medium" style={{ color: "var(--danger)" }}>
           {error}
         </p>
       )}
@@ -83,16 +91,16 @@ export default function ReplyBox({
         <button
           onClick={suggest}
           disabled={suggesting || sending}
-          className="pixel-btn"
+          className="btn"
         >
-          {suggesting ? "חושב…" : "הצעת תשובה (AI)"}
+          {suggesting ? t.thread.suggesting : t.thread.suggest}
         </button>
         <button
           onClick={send}
           disabled={sending || suggesting || !body.trim()}
-          className="pixel-btn pixel-btn-cta"
+          className="btn btn-primary"
         >
-          {sending ? "שולח…" : "שליחה"}
+          {sending ? t.thread.sending : t.thread.send}
         </button>
       </div>
     </div>

@@ -1,49 +1,59 @@
 import type { Metadata } from "next";
-import { Press_Start_2P, VT323, Rubik } from "next/font/google";
+import { Inter, Heebo } from "next/font/google";
+import { getDict, dirFor } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
+import { I18nProvider } from "@/app/i18n-context";
+import LanguageToggle from "@/app/components/LanguageToggle";
 import "./globals.css";
 
-// Latin pixel heading font — Press Start 2P
-const pressStart = Press_Start_2P({
-  weight: "400",
+// Latin / English font
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-pixel",
+  variable: "--font-inter",
   display: "swap",
 });
 
-// Retro number/date/currency font — VT323
-const vt323 = VT323({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-vt",
-  display: "swap",
-});
-
-// Hebrew + Latin body font — Rubik (bilingual, bold for chunky pixel feel)
-const rubik = Rubik({
-  weight: ["400", "600", "700"],
+// Hebrew + Latin fallback font
+const heebo = Heebo({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin", "hebrew"],
-  variable: "--font-hebrew",
+  variable: "--font-heebo",
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "ניהול שוכרים | Tenant Manager",
-  description:
-    "כלי לניהול תקשורת, תחזוקה ושכר דירה מול שוכרים — Landlord ↔ Tenant Manager",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = getDict(locale);
+  return {
+    title: t.app.title,
+    description: t.app.description,
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
+  const dict = getDict(locale);
+
   return (
     <html
-      lang="he"
-      dir="rtl"
-      className={`h-full antialiased ${pressStart.variable} ${vt323.variable} ${rubik.variable}`}
+      lang={locale}
+      dir={dirFor(locale)}
+      className={`h-full ${inter.variable} ${heebo.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col antialiased" style={{ background: "var(--bg)" }}>
+        <I18nProvider locale={locale} dict={dict}>
+          {/* Slim top bar — language toggle always visible */}
+          <div
+            className="flex items-center justify-end gap-3 px-4 py-2"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}
+          >
+            <LanguageToggle />
+          </div>
+          {children}
+        </I18nProvider>
+      </body>
     </html>
   );
 }

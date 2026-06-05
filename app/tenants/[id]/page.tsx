@@ -2,22 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/format";
+import { getDict } from "@/lib/i18n";
+import { getLocale } from "@/lib/i18n-server";
 import ReplyBox from "./ReplyBox";
 import MaintenanceStatusSelect from "./MaintenanceStatusSelect";
 import RentSection from "./RentSection";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  open: "פתוח",
-  in_progress: "בטיפול",
-  resolved: "טופל",
-};
-
 const STATUS_PILL: Record<string, string> = {
-  open: "pixel-pill pixel-pill--open",
-  in_progress: "pixel-pill pixel-pill--in-progress",
-  resolved: "pixel-pill pixel-pill--done",
+  open:        "pill pill--open",
+  in_progress: "pill pill--in-progress",
+  resolved:    "pill pill--done",
 };
 
 export default async function TenantThread({
@@ -26,6 +22,8 @@ export default async function TenantThread({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const locale = await getLocale();
+  const t = getDict(locale);
 
   const tenant = await prisma.tenant.findUnique({
     where: { id },
@@ -64,32 +62,40 @@ export default async function TenantThread({
         <div>
           <Link
             href="/"
-            className="pixel-btn inline-flex text-xs"
-            aria-label="חזרה לרשימת השוכרים"
+            className="btn btn-ghost inline-flex text-sm"
+            aria-label={t.nav.backLabel}
           >
-            ← חזרה לרשימה
+            {t.nav.back}
           </Link>
-          <h1 className="mt-3 text-lg font-semibold leading-snug">
+          <h1 className="mt-2 text-xl font-semibold" style={{ color: "var(--text)" }}>
             {tenant.name}{" "}
-            <span className="text-sm font-normal text-muted">· {tenant.unitLabel}</span>
+            <span className="text-sm font-normal" style={{ color: "var(--muted)" }}>
+              · {tenant.unitLabel}
+            </span>
           </h1>
         </div>
         <span
-          className={
-            tenant.telegramChatId
-              ? "pixel-pill pixel-pill--linked mt-1"
-              : "pixel-pill pixel-pill--unlinked mt-1"
-          }
+          className={`mt-1 ${
+            tenant.telegramChatId ? "pill pill--linked" : "pill pill--unlinked"
+          }`}
         >
-          {tenant.telegramChatId ? "מקושר ✓" : "לא מקושר"}
+          {tenant.telegramChatId ? t.thread.linkedYes : t.thread.linkedNo}
         </span>
       </header>
 
       {/* Message thread */}
       <section className="mb-6">
-        <div className="pixel-card flex flex-col gap-2 bg-surface p-4">
+        <div
+          className="card flex flex-col gap-2 p-4"
+          style={{ background: "var(--surface)" }}
+        >
           {tenant.messages.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted">אין הודעות עדיין</p>
+            <p
+              className="py-8 text-center text-sm"
+              style={{ color: "var(--muted)" }}
+            >
+              {t.thread.noMessages}
+            </p>
           )}
           {tenant.messages.map((m) => {
             const outbound = m.direction === "outbound";
@@ -98,15 +104,11 @@ export default async function TenantThread({
                 key={m.id}
                 className={`flex ${outbound ? "justify-end" : "justify-start"}`}
               >
-                <div
-                  dir="auto"
-                  className={outbound ? "pixel-bubble-out" : "pixel-bubble-in"}
-                >
+                <div dir="auto" className={outbound ? "bubble-out" : "bubble-in"}>
                   <div className="whitespace-pre-wrap break-words text-sm">{m.body}</div>
                   <div
-                    className={`font-vt mt-1 text-xs ${
-                      outbound ? "opacity-80" : "text-muted"
-                    }`}
+                    className="mt-1 text-xs"
+                    style={{ opacity: 0.75 }}
                   >
                     {formatDateTime(m.createdAt)}
                   </div>
@@ -116,43 +118,43 @@ export default async function TenantThread({
           })}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3">
           <ReplyBox tenantId={tenant.id} linked={Boolean(tenant.telegramChatId)} />
         </div>
       </section>
 
       {/* Maintenance */}
       <section>
-        <h2 className="mb-3 text-base font-semibold">בקשות תחזוקה</h2>
+        <h2 className="mb-3 text-base font-semibold" style={{ color: "var(--text)" }}>
+          {t.maintenance.title}
+        </h2>
         {tenant.maintenanceRequests.length === 0 ? (
-          <p className="text-sm text-muted">אין בקשות תחזוקה</p>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            {t.maintenance.empty}
+          </p>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-3">
             {tenant.maintenanceRequests.map((r) => (
-              <li key={r.id} className="pixel-card">
+              <li key={r.id} className="card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p dir="auto" className="font-semibold">
+                    <p dir="auto" className="font-medium" style={{ color: "var(--text)" }}>
                       {r.title}
                     </p>
                     {r.description && (
-                      <p dir="auto" className="mt-0.5 text-sm text-muted">
+                      <p dir="auto" className="mt-0.5 text-sm" style={{ color: "var(--muted)" }}>
                         {r.description}
                       </p>
                     )}
-                    <p className="font-vt mt-1 text-xs text-muted">
+                    <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
                       {formatDateTime(r.createdAt)}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <span className={STATUS_PILL[r.status] ?? "pixel-pill pixel-pill--open"}>
-                      {STATUS_LABEL[r.status] ?? r.status}
+                    <span className={STATUS_PILL[r.status] ?? "pill pill--open"}>
+                      {t.maintenance.status[r.status as keyof typeof t.maintenance.status] ?? r.status}
                     </span>
-                    <MaintenanceStatusSelect
-                      requestId={r.id}
-                      status={r.status}
-                      label={STATUS_LABEL[r.status] ?? r.status}
-                    />
+                    <MaintenanceStatusSelect requestId={r.id} status={r.status} />
                   </div>
                 </div>
 
@@ -163,9 +165,9 @@ export default async function TenantThread({
                       <img
                         key={p.id}
                         src={`/api/photo/${encodeURIComponent(p.telegramFileId)}`}
-                        alt={p.caption ?? "תמונת תחזוקה"}
-                        className="h-28 w-28 object-cover border-2 border-ink"
-                        style={{ boxShadow: "var(--pixel-shadow-sm)" }}
+                        alt={p.caption ?? t.maintenance.photoAlt}
+                        className="h-28 w-28 rounded-md object-cover"
+                        style={{ border: "1px solid var(--border)" }}
                       />
                     ))}
                   </div>
@@ -178,7 +180,9 @@ export default async function TenantThread({
 
       {/* Rent */}
       <section className="mt-8">
-        <h2 className="mb-3 text-base font-semibold">שכר דירה</h2>
+        <h2 className="mb-3 text-base font-semibold" style={{ color: "var(--text)" }}>
+          {t.rent.title}
+        </h2>
         <RentSection tenantId={tenant.id} schedules={schedules} invoices={invoices} />
       </section>
     </main>

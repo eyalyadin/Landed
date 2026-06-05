@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/app/i18n-context";
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +25,29 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "התחברות נכשלה / login failed");
+      setError(t.login.error);
     }
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-canvas px-6 py-24">
-      <form onSubmit={onSubmit} className="pixel-card w-full max-w-sm">
-        <h1 className="text-lg font-semibold">כניסת בעל הבית</h1>
-        <p className="mt-1 text-xs text-muted">Landlord login</p>
+    <main
+      className="flex flex-1 items-center justify-center px-6 py-24"
+      style={{ background: "var(--bg)" }}
+    >
+      <form onSubmit={onSubmit} className="card w-full max-w-sm">
+        <h1 className="text-xl font-semibold" style={{ color: "var(--text)" }}>
+          {t.login.title}
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+          {t.login.subtitle}
+        </p>
 
-        <label className="mt-6 block text-sm font-semibold" htmlFor="password">
-          סיסמה
+        <label
+          className="mt-6 block text-sm font-medium"
+          htmlFor="password"
+          style={{ color: "var(--text)" }}
+        >
+          {t.login.passwordLabel}
         </label>
         <input
           id="password"
@@ -43,11 +55,11 @@ export default function LoginPage() {
           autoFocus
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="pixel-input mt-1"
+          className="input mt-1"
         />
 
         {error && (
-          <p className="mt-3 text-sm font-medium" style={{ color: "#DC2626" }}>
+          <p className="mt-3 text-sm font-medium" style={{ color: "var(--danger)" }}>
             {error}
           </p>
         )}
@@ -55,9 +67,9 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading || password.length === 0}
-          className="pixel-btn pixel-btn-ink mt-6 w-full"
+          className="btn btn-primary mt-6 w-full"
         >
-          {loading ? "מתחבר…" : "כניסה"}
+          {loading ? t.login.submitting : t.login.submit}
         </button>
       </form>
     </main>

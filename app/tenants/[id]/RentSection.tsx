@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatILS, formatDate } from "@/lib/format";
+import { useI18n } from "@/app/i18n-context";
 
 type Schedule = {
   id: string;
@@ -19,10 +20,10 @@ type Invoice = {
   paidDate: string | null;
 };
 
-const STATUS: Record<Invoice["status"], { label: string; pillCls: string }> = {
-  pending: { label: "ממתין",  pillCls: "pixel-pill pixel-pill--pending" },
-  paid:    { label: "שולם",   pillCls: "pixel-pill pixel-pill--paid"    },
-  overdue: { label: "באיחור", pillCls: "pixel-pill pixel-pill--overdue" },
+const INVOICE_PILL: Record<Invoice["status"], string> = {
+  pending: "pill pill--pending",
+  paid:    "pill pill--paid",
+  overdue: "pill pill--overdue",
 };
 
 export default function RentSection({
@@ -34,6 +35,7 @@ export default function RentSection({
   schedules: Schedule[];
   invoices: Invoice[];
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("1");
@@ -62,8 +64,7 @@ export default function RentSection({
       setDueDay("1");
       router.refresh();
     } else {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "יצירת לוח נכשלה");
+      setError(t.rent.createError);
     }
   }
 
@@ -79,24 +80,35 @@ export default function RentSection({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {/* Existing schedules */}
       {schedules.length > 0 && (
-        <ul className="pixel-card space-y-1 text-sm">
+        <ul
+          className="rounded-lg border p-3 text-sm"
+          style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+        >
           {schedules.map((s) => (
-            <li key={s.id} className="font-vt">
-              {formatILS(s.amount)} · כל {s.dueDayOfMonth} בחודש · החל מ-{formatDate(new Date(s.startDate))}
+            <li key={s.id} style={{ color: "var(--muted)" }}>
+              {t.rent.scheduleSummary(
+                formatILS(s.amount),
+                s.dueDayOfMonth,
+                formatDate(new Date(s.startDate)),
+              )}
             </li>
           ))}
         </ul>
       )}
 
       {/* New schedule form */}
-      <form onSubmit={createSchedule} className="pixel-card">
-        <p className="mb-3 text-xs font-bold text-muted">לוח תשלומים חדש</p>
+      <form onSubmit={createSchedule} className="card">
+        <p className="mb-3 text-xs font-semibold" style={{ color: "var(--muted)" }}>
+          {t.rent.newSchedule}
+        </p>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-semibold text-muted">סכום (₪)</label>
+            <label className="block text-xs font-medium" style={{ color: "var(--muted)" }}>
+              {t.rent.amount}
+            </label>
             <input
               type="number"
               min="1"
@@ -104,11 +116,13 @@ export default function RentSection({
               required
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="pixel-input mt-1 w-32"
+              className="input mt-1 w-32"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted">יום בחודש (1–28)</label>
+            <label className="block text-xs font-medium" style={{ color: "var(--muted)" }}>
+              {t.rent.dueDay}
+            </label>
             <input
               type="number"
               min="1"
@@ -116,29 +130,27 @@ export default function RentSection({
               required
               value={dueDay}
               onChange={(e) => setDueDay(e.target.value)}
-              className="pixel-input mt-1 w-24"
+              className="input mt-1 w-24"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted">תאריך התחלה</label>
+            <label className="block text-xs font-medium" style={{ color: "var(--muted)" }}>
+              {t.rent.startDate}
+            </label>
             <input
               type="date"
               required
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="pixel-input mt-1"
+              className="input mt-1"
             />
           </div>
-          <button
-            type="submit"
-            disabled={busy}
-            className="pixel-btn pixel-btn-ink"
-          >
-            צור לוח + 12 חשבוניות
+          <button type="submit" disabled={busy} className="btn btn-primary">
+            {t.rent.createBtn}
           </button>
         </div>
         {error && (
-          <p className="mt-2 text-sm font-medium" style={{ color: "#DC2626" }}>
+          <p className="mt-2 text-sm font-medium" style={{ color: "var(--danger)" }}>
             {error}
           </p>
         )}
@@ -146,38 +158,45 @@ export default function RentSection({
 
       {/* Invoices */}
       {invoices.length === 0 ? (
-        <p className="text-sm text-muted">אין חשבוניות עדיין</p>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>
+          {t.rent.noInvoices}
+        </p>
       ) : (
-        <ul className="pixel-card p-0">
+        <ul className="card p-0 overflow-hidden">
           {invoices.map((inv, i) => (
             <li
               key={inv.id}
-              className={`flex items-center justify-between gap-3 px-4 py-2.5 ${
-                i > 0 ? "border-t-2 border-ink" : ""
-              }`}
+              className="flex items-center justify-between gap-3 px-4 py-2.5"
+              style={{
+                borderTop: i > 0 ? "1px solid var(--border)" : undefined,
+              }}
             >
               <div className="flex items-center gap-3">
-                <span className={STATUS[inv.status].pillCls}>
-                  {STATUS[inv.status].label}
+                <span className={INVOICE_PILL[inv.status]}>
+                  {t.rent.status[inv.status]}
                 </span>
-                <span className="font-vt text-sm">{formatDate(new Date(inv.dueDate))}</span>
-                <span className="font-vt text-sm font-bold">{formatILS(inv.amount)}</span>
+                <span className="text-sm" style={{ color: "var(--text)" }}>
+                  {formatDate(new Date(inv.dueDate))}
+                </span>
+                <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                  {formatILS(inv.amount)}
+                </span>
               </div>
               {inv.status === "paid" ? (
                 <button
                   onClick={() => setPaid(inv.id, false)}
                   disabled={busy}
-                  className="pixel-btn text-xs"
+                  className="btn btn-ghost text-xs"
                 >
-                  בטל תשלום
+                  {t.rent.unmarkPaid}
                 </button>
               ) : (
                 <button
                   onClick={() => setPaid(inv.id, true)}
                   disabled={busy}
-                  className="pixel-btn pixel-btn-success text-xs"
+                  className="btn btn-success text-xs"
                 >
-                  סמן כשולם
+                  {t.rent.markPaid}
                 </button>
               )}
             </li>
