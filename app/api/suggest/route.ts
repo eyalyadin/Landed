@@ -1,8 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { suggestReply } from "@/lib/gemini";
+import { corsPreflight, jsonWithCors } from "@/lib/cors";
 
 export const dynamic = "force-dynamic";
+
+export async function OPTIONS(req: NextRequest) {
+  return corsPreflight(req);
+}
 
 // POST /api/suggest { tenantId } → AI-suggested reply in the tenant's language.
 export async function POST(req: NextRequest) {
@@ -11,7 +16,7 @@ export async function POST(req: NextRequest) {
   const tenantId = rawId !== undefined ? Number(rawId) : NaN;
 
   if (!Number.isFinite(tenantId)) {
-    return NextResponse.json({ error: "tenantId is required" }, { status: 400 });
+    return jsonWithCors(req, { error: "tenantId is required" }, { status: 400 });
   }
 
   const tenant = await prisma.tenant.findUnique({
@@ -19,10 +24,10 @@ export async function POST(req: NextRequest) {
     include: { thread: true },
   });
   if (!tenant) {
-    return NextResponse.json({ error: "tenant not found" }, { status: 404 });
+    return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }
   if (!tenant.thread) {
-    return NextResponse.json({ error: "tenant has no message thread" }, { status: 409 });
+    return jsonWithCors(req, { error: "tenant has no message thread" }, { status: 409 });
   }
 
   // Last ~10 messages from the thread, oldest → newest for a natural transcript.
@@ -32,7 +37,8 @@ export async function POST(req: NextRequest) {
     take: 10,
   });
   if (recent.length === 0) {
-    return NextResponse.json(
+    return jsonWithCors(
+      req,
       { error: "no messages yet to base a suggestion on" },
       { status: 409 },
     );
@@ -41,9 +47,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const suggestion = await suggestReply(messages);
-    return NextResponse.json({ ok: true, suggestion });
+    return jsonWithCors(req, { ok: true, suggestion });
   } catch (err) {
-    return NextResponse.json(
+    return jsonWithCors(
+      req,
       { error: `suggestion failed: ${(err as Error).message}` },
       { status: 502 },
     );

@@ -23,11 +23,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { 
-  Search, 
-  Plus, 
-  Phone, 
-  Mail, 
+import {
+  Search,
+  Plus,
+  Phone,
+  Mail,
   Star,
   MoreHorizontal,
   Filter,
@@ -206,7 +206,7 @@ export default function VendorsPage() {
               </TableHeader>
               <TableBody>
                 {filteredVendors.map((vendor) => (
-                  <TableRow 
+                  <TableRow
                     key={vendor.id}
                     className="cursor-pointer"
                     onClick={() => setSelectedVendor(vendor)}

@@ -41,7 +41,7 @@ export default function DashboardPage() {
 
   const paidPayments = samplePayments.filter(p => p.status === 'paid' && p.type === 'rent')
   const collectedRent = paidPayments.reduce((sum, p) => sum + p.amount, 0)
-  
+
   const overduePayments = samplePayments.filter(p => p.status === 'overdue')
   const overdueAmount = overduePayments.reduce((sum, p) => sum + p.amount, 0)
 
@@ -58,8 +58,8 @@ export default function DashboardPage() {
   })
 
   // Properties needing attention (overdue payment or urgent tasks)
-  const propertiesNeedingAttention = sampleProperties.filter(p => 
-    p.paymentStatus === 'overdue' || 
+  const propertiesNeedingAttention = sampleProperties.filter(p =>
+    p.paymentStatus === 'overdue' ||
     sampleTasks.some(t => t.propertyId === p.id && t.priority === 'urgent' && t.status !== 'completed')
   )
 

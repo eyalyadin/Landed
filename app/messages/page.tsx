@@ -40,14 +40,14 @@ import {
   type Message,
 } from '@/lib/data'
 
-function ConversationRow({ 
-  thread, 
-  isSelected, 
-  onClick 
-}: { 
+function ConversationRow({
+  thread,
+  isSelected,
+  onClick
+}: {
   thread: MessageThread
   isSelected: boolean
-  onClick: () => void 
+  onClick: () => void
 }) {
   const tenant = getTenantById(thread.tenantId)
   const property = getPropertyById(thread.propertyId)
@@ -332,8 +332,8 @@ export default function MessagesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showMobileThread, setShowMobileThread] = useState(false)
 
-  const selectedThread = selectedThreadId 
-    ? sampleMessageThreads.find(t => t.id === selectedThreadId) 
+  const selectedThread = selectedThreadId
+    ? sampleMessageThreads.find(t => t.id === selectedThreadId)
     : null
   const messages = selectedThreadId ? getMessagesByThreadId(selectedThreadId) : []
   const selectedTenant = selectedThread ? getTenantById(selectedThread.tenantId) : null
@@ -342,8 +342,8 @@ export default function MessagesPage() {
   const filteredThreads = sampleMessageThreads.filter(thread => {
     const tenant = getTenantById(thread.tenantId)
     const property = getPropertyById(thread.propertyId)
-    
-    const matchesSearch = !searchQuery || 
+
+    const matchesSearch = !searchQuery ||
       tenant?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property?.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       thread.lastMessagePreview.toLowerCase().includes(searchQuery.toLowerCase())

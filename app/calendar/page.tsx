@@ -171,11 +171,11 @@ function MonthView({ currentDate, events }: { currentDate: Date, events: Calenda
   const daysInMonth = lastDay.getDate()
 
   const days = []
-  
+
   for (let i = 0; i < startPadding; i++) {
     days.push(null)
   }
-  
+
   for (let i = 1; i <= daysInMonth; i++) {
     days.push(i)
   }
@@ -186,7 +186,7 @@ function MonthView({ currentDate, events }: { currentDate: Date, events: Calenda
   }
 
   const today = new Date()
-  const isToday = (day: number) => 
+  const isToday = (day: number) =>
     today.getDate() === day && today.getMonth() === month && today.getFullYear() === year
 
   return (
@@ -204,9 +204,9 @@ function MonthView({ currentDate, events }: { currentDate: Date, events: Calenda
             if (day === null) {
               return <div key={`empty-${index}`} className="min-h-[70px]" />
             }
-            
+
             const dayEvents = getEventsForDay(day)
-            
+
             return (
               <div
                 key={day}

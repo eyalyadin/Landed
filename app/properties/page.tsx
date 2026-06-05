@@ -53,7 +53,7 @@ export default function PropertiesPage() {
   const filteredProperties = sampleProperties.filter(property => {
     const matchesSearch = property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property.city.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     const matchesStatus = statusFilter === 'all' || property.occupancyStatus === statusFilter
     const matchesPayment = paymentFilter === 'all' || property.paymentStatus === paymentFilter
 

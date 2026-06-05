@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const config = getStatusConfig(status)
-  
+
   return (
     <span
       className={cn(
@@ -118,7 +118,7 @@ interface PriorityBadgeProps {
 
 export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
   const config = getPriorityConfig(priority)
-  
+
   return (
     <span
       className={cn(

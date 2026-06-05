@@ -136,7 +136,7 @@ export default function ContractsPage() {
     const matchesSearch = contract.documentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       property?.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tenant?.fullName.toLowerCase().includes(searchQuery.toLowerCase())
-    
+
     const matchesType = typeFilter === 'all' || contract.documentType === typeFilter
     const matchesProperty = propertyFilter === 'all' || contract.propertyId === propertyFilter
 

@@ -23,12 +23,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { 
-  Search, 
-  Plus, 
-  Phone, 
-  Mail, 
-  Building2, 
+import {
+  Search,
+  Plus,
+  Phone,
+  Mail,
+  Building2,
   MessageSquare,
   MoreHorizontal,
   Filter
@@ -177,7 +177,7 @@ export default function TenantsPage() {
               </TableHeader>
               <TableBody>
                 {filteredTenants.map((tenant) => (
-                  <TableRow 
+                  <TableRow
                     key={tenant.id}
                     className="cursor-pointer"
                     onClick={() => setSelectedTenant(tenant)}

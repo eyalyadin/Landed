@@ -195,7 +195,7 @@ export default function TasksPage() {
 
   // Calculate metrics
   const activeTasks = sampleTasks.filter(t => t.status !== 'completed')
-  const overdueTasks = sampleTasks.filter(t => 
+  const overdueTasks = sampleTasks.filter(t =>
     new Date(t.dueDate) < new Date() && t.status !== 'completed'
   )
   const urgentTasks = sampleTasks.filter(t => t.priority === 'urgent' && t.status !== 'completed')
@@ -205,7 +205,7 @@ export default function TasksPage() {
     const property = getPropertyById(task.propertyId)
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (property?.address.toLowerCase().includes(searchQuery.toLowerCase()))
-    
+
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter
     const matchesProperty = propertyFilter === 'all' || task.propertyId === propertyFilter
@@ -303,7 +303,7 @@ export default function TasksPage() {
               className="pl-9 bg-card"
             />
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[160px] bg-card">
