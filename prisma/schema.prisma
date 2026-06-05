@@ -1,5 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma 7 schema — datasource URL lives in prisma.config.ts, NOT here.
+// Integer identity PKs throughout (GENERATED ALWAYS AS IDENTITY in migration SQL).
+// WARNING: MessageThread rows are NEVER created by application code —
+//   the trigger trg_create_tenant_thread handles that on every Tenant INSERT.
 
 generator client {
   provider = "prisma-client"
@@ -10,123 +12,328 @@ datasource db {
   provider = "postgresql"
 }
 
-// ---------- Enums ----------
+// ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum MessageDirection {
   inbound
   outbound
 }
 
-enum MaintenanceStatus {
+enum ThreadStatus {
   open
-  in_progress
   resolved
 }
 
-enum InvoiceStatus {
+enum ThreadUrgency {
+  normal
+  urgent
+}
+
+enum JobStatus {
+  new
+  in_progress
+  waiting_on_tenant
+  waiting_on_vendor
+  completed
+}
+
+enum JobPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum JobCategory {
+  repair
+  payment_followup
+  contract_renewal
+  tenant_issue
+  inspection
+  maintenance
+}
+
+enum PaymentStatus {
   pending
   paid
   overdue
+  partial
 }
 
-// ---------- Models ----------
+enum PaymentType {
+  rent
+  deposit
+  fee
+}
+
+enum DocumentType {
+  rental_contract
+  inventory
+  deposit_document
+  keys_record
+  other
+}
+
+enum VendorCategory {
+  ac_hvac
+  electrician
+  plumbing
+  painting
+  locksmith
+  handyman
+  cleaning
+  appliance_repair
+  pest_control
+}
+
+enum PropertyType {
+  apartment
+  house
+  condo
+  townhouse
+  commercial
+}
+
+enum OccupancyStatus {
+  occupied
+  vacant
+}
+
+enum CalendarEventType {
+  rent_due
+  lease_start
+  lease_end
+  renewal_reminder
+  scheduled_repair
+  move_in
+  move_out
+  inspection
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
 
 model Landlord {
-  id      String   @id @default(cuid())
-  name    String
-  tenants Tenant[]
+  id         Int        @id @default(autoincrement())
+  name       String
+  properties Property[]
+  tenants    Tenant[]
 }
 
-model Tenant {
-  id                String   @id @default(cuid())
-  landlordId        String
-  name              String
-  unitLabel         String
-  phone             String?
-  telegramChatId    String?  @unique // null until the tenant links via /start
-  linkToken         String   @unique
-  preferredLanguage String? // e.g. "he" | "en"
-  createdAt         DateTime @default(now())
+model Property {
+  id              Int             @id @default(autoincrement())
+  landlordId      Int
+  address         String
+  city            String
+  propertyType    PropertyType    @default(apartment)
+  unitLabel       String?
+  occupancyStatus OccupancyStatus @default(vacant)
+  monthlyRent     Decimal         @db.Decimal(10, 2)
+  rentCurrency    String          @default("ILS")
+  leaseStartDate  DateTime?       @db.Date
+  leaseEndDate    DateTime?       @db.Date
+  managerName     String?
+  notes           String?
 
-  landlord            Landlord             @relation(fields: [landlordId], references: [id], onDelete: Cascade)
-  messages            Message[]
-  maintenanceRequests MaintenanceRequest[]
-  rentSchedules       RentSchedule[]
-  rentInvoices        RentInvoice[]
+  landlord       Landlord        @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenants        Tenant[]
+  jobs           Job[]
+  documents      Document[]
+  payments       Payment[]
+  calendarEvents CalendarEvent[]
 
   @@index([landlordId])
 }
 
+model Tenant {
+  id                Int       @id @default(autoincrement())
+  landlordId        Int
+  propertyId        Int?
+  name              String
+  email             String?
+  phone             String?
+  telegramChatId    String?   @unique
+  linkToken         String    @unique
+  preferredLanguage String?
+  moveInDate        DateTime? @db.Date
+  leaseEndDate      DateTime? @db.Date
+  paymentMethod     String?
+  contractStatus    String? // active | expiring-soon | missing
+  keysAccessNotes   String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+
+  landlord       Landlord        @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  property       Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  // thread is trigger-created; never call prisma.messageThread.create()
+  thread         MessageThread?
+  messages       Message[]
+  jobs           Job[]
+  payments       Payment[]
+  rentSchedules  RentSchedule[]
+  calendarEvents CalendarEvent[]
+
+  @@index([landlordId])
+  @@index([propertyId])
+}
+
+/// Trigger trg_create_tenant_thread creates one row per Tenant on INSERT.
+/// Application code must NEVER call prisma.messageThread.create().
+model MessageThread {
+  id                  Int           @id @default(autoincrement())
+  tenantId            Int           @unique
+  unreadCount         Int           @default(0)
+  lastMessageAt       DateTime?
+  status              ThreadStatus  @default(open)
+  urgency             ThreadUrgency @default(normal)
+  summary             String?
+  suggestedNextAction String?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages Message[]
+}
+
 model Message {
-  id                String           @id @default(cuid())
-  tenantId          String
+  id                Int              @id @default(autoincrement())
+  threadId          Int
+  tenantId          Int
   direction         MessageDirection
   body              String
   detectedLanguage  String?
   telegramMessageId String?
+  isInternalNote    Boolean          @default(false)
   createdAt         DateTime         @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([threadId, createdAt])
   @@index([tenantId, createdAt])
 }
 
-model MaintenanceRequest {
-  id          String            @id @default(cuid())
-  tenantId    String
-  title       String
-  description String?
-  status      MaintenanceStatus @default(open)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+model Job {
+  id             Int         @id @default(autoincrement())
+  propertyId     Int
+  tenantId       Int?
+  sourceThreadId Int?
+  title          String
+  description    String?
+  category       JobCategory @default(repair)
+  priority       JobPriority @default(medium)
+  status         JobStatus   @default(new)
+  dueDate        DateTime?   @db.Date
+  contractorName String?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  tenant Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  photos MaintenancePhoto[]
+  property       Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant         Tenant?         @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  attachments    JobAttachment[]
+  calendarEvents CalendarEvent[]
 
+  @@index([propertyId])
   @@index([tenantId])
+  @@index([status])
 }
 
-model MaintenancePhoto {
-  id                   String   @id @default(cuid())
-  maintenanceRequestId String
-  telegramFileId       String
-  caption              String?
-  createdAt            DateTime @default(now())
+model JobAttachment {
+  id             Int      @id @default(autoincrement())
+  jobId          Int
+  telegramFileId String
+  caption        String?
+  createdAt      DateTime @default(now())
 
-  maintenanceRequest MaintenanceRequest @relation(fields: [maintenanceRequestId], references: [id], onDelete: Cascade)
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
-  @@index([maintenanceRequestId])
+  @@index([jobId])
+}
+
+model Vendor {
+  id           Int            @id @default(autoincrement())
+  name         String
+  phone        String
+  email        String?
+  category     VendorCategory
+  serviceArea  String
+  notes        String?
+  isPreferred  Boolean        @default(false)
+  contactPerson String?
+  rating       Decimal?       @db.Decimal(3, 1)
+  activeJobs   Int            @default(0)
+  completedJobs Int           @default(0)
+}
+
+model Document {
+  id           Int          @id @default(autoincrement())
+  propertyId   Int
+  documentName String
+  documentType DocumentType @default(rental_contract)
+  fileUrl      String?
+  uploadedAt   DateTime     @db.Date
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
 }
 
 model RentSchedule {
-  id            String    @id @default(cuid())
-  tenantId      String
-  amount        Decimal   @db.Decimal(10, 2) // ILS
-  dueDayOfMonth Int // 1-28
+  id            Int       @id @default(autoincrement())
+  tenantId      Int
+  amount        Decimal   @db.Decimal(10, 2)
+  dueDayOfMonth Int
   startDate     DateTime  @db.Date
   endDate       DateTime? @db.Date
   active        Boolean   @default(true)
 
-  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices RentInvoice[]
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments Payment[]
 
   @@index([tenantId])
 }
 
-model RentInvoice {
-  id             String        @id @default(cuid())
-  tenantId       String
-  rentScheduleId String
-  dueDate        DateTime      @db.Date // a calendar day, not a timestamp
+model Payment {
+  id             Int           @id @default(autoincrement())
+  propertyId     Int
+  tenantId       Int
+  rentScheduleId Int?
   amount         Decimal       @db.Decimal(10, 2)
-  status         InvoiceStatus @default(pending)
+  currency       String        @default("ILS")
+  type           PaymentType   @default(rent)
+  status         PaymentStatus @default(pending)
+  dueDate        DateTime      @db.Date
   paidDate       DateTime?     @db.Date
+  source         String?
+  reference      String?
+  notes          String?
   createdAt      DateTime      @default(now())
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  rentSchedule RentSchedule @relation(fields: [rentScheduleId], references: [id], onDelete: Cascade)
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rentSchedule RentSchedule? @relation(fields: [rentScheduleId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
+  @@index([propertyId])
   @@index([rentScheduleId])
   @@index([status, dueDate])
+}
+
+model CalendarEvent {
+  id         Int               @id @default(autoincrement())
+  title      String
+  eventType  CalendarEventType
+  propertyId Int?
+  tenantId   Int?
+  jobId      Int?
+  start      DateTime          @db.Date
+  end        DateTime?         @db.Date
+  status     String?
+  notes      String?
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  job      Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([start])
 }

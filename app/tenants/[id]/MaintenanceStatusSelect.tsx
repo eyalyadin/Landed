@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const OPTIONS: { value: string; label: string }[] = [
-  { value: "open", label: "פתוח" },
+  { value: "new", label: "חדש" },
   { value: "in_progress", label: "בטיפול" },
-  { value: "resolved", label: "טופל" },
+  { value: "waiting_on_tenant", label: "ממתין לשוכר" },
+  { value: "waiting_on_vendor", label: "ממתין לקבלן" },
+  { value: "completed", label: "הושלם" },
 ];
 
 export default function MaintenanceStatusSelect({
@@ -34,7 +36,7 @@ export default function MaintenanceStatusSelect({
     if (res.ok) {
       router.refresh();
     } else {
-      setValue(prev); // revert on failure
+      setValue(prev);
     }
   }
 
