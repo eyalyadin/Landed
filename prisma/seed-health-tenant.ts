@@ -33,9 +33,26 @@
 import "dotenv/config";
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { addMonths, setDate } from "date-fns";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+// Prefer DATABASE_PUBLIC_URL when running locally against Railway
+// (the internal postgres.railway.internal host is only reachable inside Railway).
+// The public URL requires SSL; use a direct pg.Pool to control SSL options.
+const connectionString =
+  process.env.DATABASE_PUBLIC_URL ?? process.env.DATABASE_URL!;
+const isPublicUrl = !!process.env.DATABASE_PUBLIC_URL;
+
+// Append SSL params for the public Railway URL.
+// pg v8 treats sslmode=require as verify-full; uselibpqcompat=true restores
+// the standard libpq behaviour where 'require' means "encrypt but don't verify cert".
+const effectiveConnectionString =
+  isPublicUrl && !connectionString.includes("sslmode")
+    ? `${connectionString}?uselibpqcompat=true&sslmode=require`
+    : connectionString;
+
+const pool = new Pool({ connectionString: effectiveConnectionString });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 // Mirror of seed.ts generateDueDates helper
@@ -53,7 +70,8 @@ const DEMO_LINK_TOKEN = "health-demo-avi";
 const DEMO_ADDRESS    = "רחוב הברוש 12";
 
 async function main() {
-  console.log("▶ seed-health-tenant: starting...");
+  const dbHost = connectionString?.match(/@([^:/]+)/)?.[1] ?? "(unknown)";
+  console.log(`▶ seed-health-tenant: starting... (host: ${dbHost}, ssl: ${isPublicUrl})`);
 
   // ── 1. Idempotent cleanup ────────────────────────────────────────────────
   // Delete existing demo tenant (cascade removes thread, messages, jobs, payments)
