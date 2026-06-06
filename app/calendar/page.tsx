@@ -343,23 +343,6 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Event Type Legend */}
-        <div className="flex flex-wrap gap-1.5">
-          {[
-            { type: 'rent-due', label: 'Rent Due' },
-            { type: 'lease-end', label: 'Lease End' },
-            { type: 'scheduled-repair', label: 'Repair' },
-            { type: 'inspection', label: 'Inspection' },
-          ].map(item => (
-            <span
-              key={item.type}
-              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getEventTypeColor(item.type as CalendarEventType)}`}
-            >
-              {item.label}
-            </span>
-          ))}
-        </div>
-
         {/* Calendar View */}
         {view === 'list' ? (
           <ListView events={filteredEvents} filter={eventTypeFilter} />

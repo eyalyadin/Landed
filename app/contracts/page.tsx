@@ -34,7 +34,6 @@ import {
   User,
   MoreHorizontal,
   Download,
-  ExternalLink,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -76,10 +75,6 @@ function ContractCard({ contract }: { contract: Contract }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem className="text-[13px]">
-                <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                View
-              </DropdownMenuItem>
               <DropdownMenuItem className="text-[13px]">
                 <Download className="mr-2 h-3.5 w-3.5" />
                 Download
@@ -143,14 +138,6 @@ export default function ContractsPage() {
     return matchesSearch && matchesType && matchesProperty
   })
 
-  // Count by type
-  const typeStats = {
-    'rental-contract': sampleContracts.filter(c => c.documentType === 'rental-contract').length,
-    'inventory': sampleContracts.filter(c => c.documentType === 'inventory').length,
-    'deposit-document': sampleContracts.filter(c => c.documentType === 'deposit-document').length,
-    'keys-record': sampleContracts.filter(c => c.documentType === 'keys-record').length,
-  }
-
   return (
     <AppShell
       pageTitle="Contracts"
@@ -162,59 +149,6 @@ export default function ContractsPage() {
       }
     >
       <div className="p-4 lg:p-5 space-y-5">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{sampleContracts.length}</p>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div>
-                <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{typeStats['rental-contract']}</p>
-                <p className="text-xs text-muted-foreground">Rental Contracts</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div>
-                <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{typeStats['inventory']}</p>
-                <p className="text-xs text-muted-foreground">Inventories</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div>
-                <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{typeStats['deposit-document']}</p>
-                <p className="text-xs text-muted-foreground">Deposits</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div>
-                <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{typeStats['keys-record']}</p>
-                <p className="text-xs text-muted-foreground">Keys Records</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1 max-w-xs">
@@ -311,10 +245,6 @@ export default function ContractsPage() {
                           </TableCell>
                           <TableCell className="py-2.5 text-right">
                             <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <ExternalLink className="h-3.5 w-3.5" />
-                                <span className="sr-only">View</span>
-                              </Button>
                               <Button variant="ghost" size="icon" className="h-7 w-7">
                                 <Download className="h-3.5 w-3.5" />
                                 <span className="sr-only">Download</span>
