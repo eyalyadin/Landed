@@ -138,7 +138,7 @@ export default async function PropertyDetailPage({
       paidDate: dateIso(p.paidDate),
     })) ?? [];
 
-  // Payment summary stats for inline bar
+  // Payment summary stats
   const monthlyRentAmt = Number(property.monthlyRent);
   const collectedTotal = invoices
     .filter((i) => i.status === "paid")
@@ -147,7 +147,7 @@ export default async function PropertyDetailPage({
     .filter((i) => i.status === "overdue")
     .reduce((s, i) => s + i.amount, 0);
 
-  // Tasks overdue check (Israel date is close enough to UTC+3 for UI purposes)
+  // Tasks overdue check
   const today = new Date();
 
   // Serialise initial messages
@@ -173,7 +173,6 @@ export default async function PropertyDetailPage({
       ? `https://t.me/${botUsername}?start=${tenant.linkToken}`
       : null;
 
-  // Open (non-completed) tasks for count label
   const openJobs = property.jobs.filter((j) => j.status !== "completed");
 
   return (
@@ -188,10 +187,11 @@ export default async function PropertyDetailPage({
           ← Back to Properties
         </Link>
 
-        {/* ── 1. HEADER — Tenant info (left) | Property info (right) ── */}
+        {/* ── 1. HEADER — Tenant (left) | Property (right) ── */}
         <Card className="border-border shadow-none">
           <CardContent className="p-0">
             <div className="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
+
               {/* Left: Tenant */}
               <div className="p-5">
                 <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -199,10 +199,11 @@ export default async function PropertyDetailPage({
                 </p>
                 {tenant ? (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-base font-semibold text-foreground">{tenant.name}</p>
+                    {/* Name + Telegram status */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-base font-semibold text-foreground leading-tight">{tenant.name}</p>
                       <span
-                        className={`text-[11px] font-medium ${
+                        className={`shrink-0 text-[11px] font-medium ${
                           tenant.telegramChatId
                             ? "text-emerald-600 dark:text-emerald-400"
                             : "text-muted-foreground"
@@ -211,6 +212,8 @@ export default async function PropertyDetailPage({
                         {tenant.telegramChatId ? "Telegram linked ✓" : "Telegram not linked"}
                       </span>
                     </div>
+
+                    {/* Contact */}
                     {tenant.phone && (
                       <div className="flex items-center gap-2 text-sm">
                         <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -229,6 +232,50 @@ export default async function PropertyDetailPage({
                           {tenant.email}
                         </a>
                       </div>
+                    )}
+
+                    {/* Lease facts — inline row */}
+                    {(tenant.moveInDate || tenant.leaseEndDate || tenant.contractStatus) && (
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-border pt-3 mt-1">
+                        {tenant.moveInDate && (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Calendar className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span className="text-muted-foreground">Move in</span>
+                            <span className="font-medium text-foreground">
+                              {dateDDMMYYYY(tenant.moveInDate)}
+                            </span>
+                          </div>
+                        )}
+                        {tenant.leaseEndDate && (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span className="text-muted-foreground">Lease ends</span>
+                            <span className="font-medium text-foreground">
+                              {dateDDMMYYYY(tenant.leaseEndDate)}
+                            </span>
+                          </div>
+                        )}
+                        {tenant.contractStatus && (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              tenant.contractStatus === "active"
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                : tenant.contractStatus === "expiring-soon"
+                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+                            }`}
+                          >
+                            Contract: {tenant.contractStatus}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {(tenant.notes || tenant.keysAccessNotes) && (
+                      <p className="text-xs text-muted-foreground border-t border-border pt-2 mt-1">
+                        {[tenant.keysAccessNotes, tenant.notes].filter(Boolean).join(" · ")}
+                      </p>
                     )}
                   </div>
                 ) : (
@@ -302,17 +349,10 @@ export default async function PropertyDetailPage({
               </div>
             ) : (
               <>
-                {/* Column headers */}
                 <div className="grid grid-cols-[2fr_1fr_1fr_40px] gap-4 border-b border-border bg-muted/40 px-5 py-2.5">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Description
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Type
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Due Date
-                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Description</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Type</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Due Date</span>
                   <span />
                 </div>
                 {property.jobs.map((job, i) => {
@@ -325,39 +365,23 @@ export default async function PropertyDetailPage({
                       key={job.id}
                       className={[
                         "grid grid-cols-[2fr_1fr_1fr_40px] gap-4 items-center px-5 py-3.5 hover:bg-muted/40 transition-colors",
-                        isOverdue
-                          ? "border-l-2 border-destructive"
-                          : "border-l-2 border-transparent",
+                        isOverdue ? "border-l-2 border-destructive" : "border-l-2 border-transparent",
                         i < property.jobs.length - 1 ? "border-b border-border" : "",
                       ].join(" ")}
                     >
                       <div className="min-w-0">
-                        <p
-                          dir="auto"
-                          className="truncate text-[13px] font-medium text-foreground"
-                        >
+                        <p dir="auto" className="truncate text-[13px] font-medium text-foreground">
                           {job.title}
                         </p>
                         {job.description && (
-                          <p
-                            dir="auto"
-                            className="truncate text-xs text-muted-foreground"
-                          >
+                          <p dir="auto" className="truncate text-xs text-muted-foreground">
                             {job.description}
                           </p>
                         )}
                       </div>
-                      <p className="text-[13px] text-muted-foreground">
-                        {jobCategoryLabel(job.category)}
-                      </p>
-                      <p
-                        className={`text-[13px] tabular-nums ${
-                          isOverdue ? "font-medium text-destructive" : "text-foreground"
-                        }`}
-                      >
-                        {job.dueDate
-                          ? new Date(job.dueDate).toLocaleDateString("en-GB")
-                          : "—"}
+                      <p className="text-[13px] text-muted-foreground">{jobCategoryLabel(job.category)}</p>
+                      <p className={`text-[13px] tabular-nums ${isOverdue ? "font-medium text-destructive" : "text-foreground"}`}>
+                        {job.dueDate ? new Date(job.dueDate).toLocaleDateString("en-GB") : "—"}
                       </p>
                       <div className="flex justify-end">
                         <DropdownMenu>
@@ -369,14 +393,9 @@ export default async function PropertyDetailPage({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
                             <div className="px-2 py-1.5">
-                              <MaintenanceStatusSelect
-                                requestId={String(job.id)}
-                                status={job.status}
-                              />
+                              <MaintenanceStatusSelect requestId={String(job.id)} status={job.status} />
                             </div>
-                            <DropdownMenuItem className="text-[13px] text-destructive">
-                              Delete
-                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-[13px] text-destructive">Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -388,108 +407,60 @@ export default async function PropertyDetailPage({
           </CardContent>
         </Card>
 
-        {/* ── 3. TENANT DETAIL + RENT & PAYMENTS ── */}
+        {/* ── 3. MESSAGES (left) | RENT & PAYMENTS (right) ── */}
         <div className="grid gap-4 lg:grid-cols-3">
 
-          {/* Left: Current Tenant detail */}
-          <Card className="border-border shadow-none lg:col-span-1">
-            <CardHeader className="px-5 py-4 border-b border-border">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <User className="h-4 w-4 text-muted-foreground" />
-                Tenant Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              {tenant ? (
-                <div className="space-y-3">
-                  {tenant.moveInDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="text-foreground">
-                        Move in: {dateDDMMYYYY(tenant.moveInDate)}
-                      </span>
-                    </div>
-                  )}
-                  {tenant.leaseEndDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="text-foreground">
-                        Lease ends: {dateDDMMYYYY(tenant.leaseEndDate)}
-                      </span>
-                    </div>
-                  )}
-                  {tenant.contractStatus && (
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                          tenant.contractStatus === "active"
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                            : tenant.contractStatus === "expiring-soon"
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                            : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                        }`}
-                      >
-                        Contract: {tenant.contractStatus}
-                      </span>
-                    </div>
-                  )}
-                  {tenant.keysAccessNotes && (
-                    <p className="text-xs text-muted-foreground border-t border-border pt-2">
-                      {tenant.keysAccessNotes}
-                    </p>
-                  )}
-                  {tenant.notes && (
-                    <p className="text-xs text-muted-foreground border-t border-border pt-2">
-                      {tenant.notes}
-                    </p>
-                  )}
-                  <div className="border-t border-border pt-3">
-                    <Link
-                      href={`/tenants/${tenant.id}`}
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      Open full thread
-                    </Link>
-                  </div>
+          {/* Left: Messages — only when there is a tenant */}
+          {tenant && (
+            <Card className="border-border shadow-none lg:col-span-1">
+              <CardHeader className="px-5 py-4 border-b border-border">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm font-semibold text-foreground truncate">
+                    Messages with {tenant.name}
+                  </CardTitle>
+                  <Link
+                    href={`/tenants/${tenant.id}`}
+                    className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <MessageSquare className="h-3 w-3" />
+                    Open full thread
+                  </Link>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-center">
-                  <User className="mb-2 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">No tenant</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">This property is vacant</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="p-5">
+                <PropertyMessagesPanel
+                  tenantId={tenant.id}
+                  threadId={threadId}
+                  tenantName={tenant.name}
+                  telegramLinked={!!tenant.telegramChatId}
+                  inviteLink={inviteLink}
+                  initialMessages={initialMessages}
+                />
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Right: Rent & Payments */}
-          <Card className="border-border shadow-none lg:col-span-2">
+          {/* Right: Rent & Payments — takes full width when no tenant */}
+          <Card className={`border-border shadow-none ${tenant ? "lg:col-span-2" : "lg:col-span-3"}`}>
             <CardHeader className="px-5 py-4 border-b border-border">
-              <CardTitle className="text-sm font-semibold text-foreground">
-                Rent & Payments
-              </CardTitle>
+              <CardTitle className="text-sm font-semibold text-foreground">Rent & Payments</CardTitle>
             </CardHeader>
             <CardContent className="p-5">
               {/* Inline stats bar */}
               <div className="mb-4 flex flex-wrap gap-px overflow-hidden rounded-lg border border-border bg-border">
-                <div className="flex flex-1 flex-col items-center py-2.5 px-4 bg-card">
+                <div className="flex flex-1 flex-col items-center bg-card px-4 py-2.5">
                   <p className="text-[11px] text-muted-foreground">Monthly Rent</p>
                   <p className="text-sm font-semibold text-foreground">{formatILS(monthlyRentAmt)}</p>
                 </div>
-                <div className="flex flex-1 flex-col items-center py-2.5 px-4 bg-card">
+                <div className="flex flex-1 flex-col items-center bg-card px-4 py-2.5">
                   <p className="text-[11px] text-muted-foreground">Collected</p>
                   <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                     {formatILS(collectedTotal)}
                   </p>
                 </div>
-                <div className="flex flex-1 flex-col items-center py-2.5 px-4 bg-card">
+                <div className="flex flex-1 flex-col items-center bg-card px-4 py-2.5">
                   <p className="text-[11px] text-muted-foreground">Overdue</p>
-                  <p
-                    className={`text-sm font-semibold ${
-                      overdueTotal > 0 ? "text-destructive" : "text-foreground"
-                    }`}
-                  >
+                  <p className={`text-sm font-semibold ${overdueTotal > 0 ? "text-destructive" : "text-foreground"}`}>
                     {formatILS(overdueTotal)}
                   </p>
                 </div>
@@ -511,17 +482,15 @@ export default async function PropertyDetailPage({
         {/* ── 4. CONTRACTS ── */}
         <Card className="border-border shadow-none">
           <CardHeader className="px-5 py-4 border-b border-border">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                Contracts
-                {property.documents.length > 0 && (
-                  <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-                    {property.documents.length}
-                  </span>
-                )}
-              </CardTitle>
-            </div>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Contracts
+              {property.documents.length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+                  {property.documents.length}
+                </span>
+              )}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {property.documents.length === 0 ? (
@@ -532,15 +501,9 @@ export default async function PropertyDetailPage({
             ) : (
               <>
                 <div className="grid grid-cols-[2fr_1fr_120px_40px] gap-4 border-b border-border bg-muted/40 px-5 py-2.5">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Document
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Type
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Uploaded
-                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Document</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Type</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Uploaded</span>
                   <span />
                 </div>
                 {property.documents.map((doc, i) => (
@@ -551,7 +514,7 @@ export default async function PropertyDetailPage({
                       i < property.documents.length - 1 ? "border-b border-border" : "",
                     ].join(" ")}
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
                       <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className="truncate text-[13px] font-medium text-foreground">
                         {doc.documentName}
@@ -560,7 +523,7 @@ export default async function PropertyDetailPage({
                     <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {documentTypeLabel(doc.documentType)}
                     </span>
-                    <span className="text-[13px] text-muted-foreground tabular-nums">
+                    <span className="text-[13px] tabular-nums text-muted-foreground">
                       {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
                     </span>
                     <div className="flex justify-end">
@@ -586,27 +549,6 @@ export default async function PropertyDetailPage({
             )}
           </CardContent>
         </Card>
-
-        {/* ── 5. MESSAGES ── */}
-        {tenant && (
-          <Card className="border-border shadow-none">
-            <CardHeader className="px-5 py-4 border-b border-border">
-              <CardTitle className="text-sm font-semibold text-foreground">
-                Messages with {tenant.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              <PropertyMessagesPanel
-                tenantId={tenant.id}
-                threadId={threadId}
-                tenantName={tenant.name}
-                telegramLinked={!!tenant.telegramChatId}
-                inviteLink={inviteLink}
-                initialMessages={initialMessages}
-              />
-            </CardContent>
-          </Card>
-        )}
 
       </div>
     </AppShell>
