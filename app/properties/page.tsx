@@ -7,37 +7,20 @@ import { PropertiesClient, type PropertyItem } from './PropertiesClient'
 export const dynamic = 'force-dynamic'
 
 export default async function PropertiesPage() {
-  const [properties, paidAgg, overdueAgg] = await Promise.all([
-    prisma.property.findMany({
-      orderBy: { address: 'asc' },
-      include: {
-        tenants: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: { id: true, name: true, leaseEndDate: true },
-        },
-        payments: {
-          where: { status: 'overdue', type: 'rent' },
-          select: { amount: true },
-        },
+  const properties = await prisma.property.findMany({
+    orderBy: { address: 'asc' },
+    include: {
+      tenants: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { id: true, name: true, leaseEndDate: true },
       },
-    }),
-    prisma.payment.aggregate({
-      _sum: { amount: true },
-      where: { status: 'paid', type: 'rent' },
-    }),
-    prisma.payment.aggregate({
-      _sum: { amount: true },
-      where: { status: 'overdue', type: 'rent' },
-    }),
-  ])
-
-  const expectedMonthly = properties
-    .filter(p => p.occupancyStatus === 'occupied')
-    .reduce((sum, p) => sum + Number(p.monthlyRent), 0)
-
-  const collected = Number(paidAgg._sum.amount ?? 0)
-  const overdueTotal = Number(overdueAgg._sum.amount ?? 0)
+      payments: {
+        where: { status: 'overdue', type: 'rent' },
+        select: { amount: true },
+      },
+    },
+  })
 
   const serialized: PropertyItem[] = properties.map(p => ({
     id: p.id,
@@ -68,12 +51,7 @@ export default async function PropertiesPage() {
         </Button>
       }
     >
-      <PropertiesClient
-        properties={serialized}
-        expectedMonthly={expectedMonthly}
-        collected={collected}
-        overdueTotal={overdueTotal}
-      />
+      <PropertiesClient properties={serialized} />
     </AppShell>
   )
 }

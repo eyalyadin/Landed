@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,9 +16,6 @@ import {
   Building2,
   Home,
   Building,
-  TrendingUp,
-  CheckCircle,
-  AlertCircle,
   Search,
   User,
   Plus,
@@ -118,12 +115,9 @@ function PropertyCard({ property, onClick }: { property: PropertyItem; onClick: 
 
 interface Props {
   properties: PropertyItem[]
-  expectedMonthly: number
-  collected: number
-  overdueTotal: number
 }
 
-export function PropertiesClient({ properties, expectedMonthly, collected, overdueTotal }: Props) {
+export function PropertiesClient({ properties }: Props) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -139,50 +133,7 @@ export function PropertiesClient({ properties, expectedMonthly, collected, overd
   })
 
   return (
-    <div className="p-4 lg:p-5 space-y-5">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border-border shadow-none">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatILS(expectedMonthly)}</p>
-                <p className="text-xs text-muted-foreground">Expected Monthly</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border shadow-none">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30">
-                <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatILS(collected)}</p>
-                <p className="text-xs text-muted-foreground">Collected</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border shadow-none">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-destructive/10">
-                <AlertCircle className="h-4 w-4 text-destructive" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatILS(overdueTotal)}</p>
-                <p className="text-xs text-muted-foreground">Overdue</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="p-4 lg:p-5 space-y-4">
       {/* Search + filter */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1 max-w-xs">
