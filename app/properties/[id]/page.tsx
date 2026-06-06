@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { dec, dateIso, dateDDMMYYYY } from "@/lib/serialize";
 import { formatILS } from "@/lib/format";
 import RentSection from "@/app/tenants/[id]/RentSection";
-import MaintenanceStatusSelect from "@/app/tenants/[id]/MaintenanceStatusSelect";
 import { PropertyMessagesPanel } from "./PropertyMessagesPanel";
+import { TasksBoard, type TaskItem } from "./TasksBoard";
 import {
   Building2,
   Home,
@@ -21,15 +21,7 @@ import {
   MessageSquare,
   Plus,
   Download,
-  CheckCircle,
-  MoreHorizontal,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -174,6 +166,15 @@ export default async function PropertyDetailPage({
       : null;
 
   const openJobs = property.jobs.filter((j) => j.status !== "completed");
+
+  const serializedJobs: TaskItem[] = property.jobs.map((j) => ({
+    id: j.id,
+    title: j.title,
+    description: j.description,
+    category: j.category as string,
+    status: j.status as string,
+    dueDate: j.dueDate?.toISOString() ?? null,
+  }));
 
   return (
     <AppShell pageTitle={property.address}>
@@ -341,69 +342,8 @@ export default async function PropertyDetailPage({
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
-            {property.jobs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <CheckCircle className="mb-2 h-7 w-7 text-emerald-500" />
-                <p className="text-sm text-muted-foreground">No tasks for this property</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-[2fr_1fr_1fr_40px] gap-4 border-b border-border bg-muted/40 px-5 py-2.5">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Description</span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Type</span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Due Date</span>
-                  <span />
-                </div>
-                {property.jobs.map((job, i) => {
-                  const isOverdue =
-                    job.dueDate !== null &&
-                    new Date(job.dueDate) < today &&
-                    job.status !== "completed";
-                  return (
-                    <div
-                      key={job.id}
-                      className={[
-                        "grid grid-cols-[2fr_1fr_1fr_40px] gap-4 items-center px-5 py-3.5 hover:bg-muted/40 transition-colors",
-                        isOverdue ? "border-l-2 border-destructive" : "border-l-2 border-transparent",
-                        i < property.jobs.length - 1 ? "border-b border-border" : "",
-                      ].join(" ")}
-                    >
-                      <div className="min-w-0">
-                        <p dir="auto" className="truncate text-[13px] font-medium text-foreground">
-                          {job.title}
-                        </p>
-                        {job.description && (
-                          <p dir="auto" className="truncate text-xs text-muted-foreground">
-                            {job.description}
-                          </p>
-                        )}
-                      </div>
-                      <p className="text-[13px] text-muted-foreground">{jobCategoryLabel(job.category)}</p>
-                      <p className={`text-[13px] tabular-nums ${isOverdue ? "font-medium text-destructive" : "text-foreground"}`}>
-                        {job.dueDate ? new Date(job.dueDate).toLocaleDateString("en-GB") : "—"}
-                      </p>
-                      <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreHorizontal className="h-3.5 w-3.5" />
-                              <span className="sr-only">Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <div className="px-2 py-1.5">
-                              <MaintenanceStatusSelect requestId={String(job.id)} status={job.status} />
-                            </div>
-                            <DropdownMenuItem className="text-[13px] text-destructive">Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
+          <CardContent className="p-4">
+            <TasksBoard propertyId={property.id} jobs={serializedJobs} />
           </CardContent>
         </Card>
 

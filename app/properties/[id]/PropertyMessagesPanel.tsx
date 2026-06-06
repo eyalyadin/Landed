@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Copy, Link2 } from "lucide-react";
+import { Send, Copy, Link2, Lightbulb, Loader2 } from "lucide-react";
 
 type Msg = {
   id: number;
@@ -31,6 +31,8 @@ export function PropertyMessagesPanel({
   const [messages, setMessages] = useState<Msg[]>(initialMessages);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +60,24 @@ export function PropertyMessagesPanel({
       }
     }
     setSending(false);
+  }
+
+  async function suggest() {
+    setSuggesting(true);
+    setSuggestError(null);
+    const res = await fetch("/api/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenantId }),
+    });
+    setSuggesting(false);
+    if (res.ok) {
+      const data = await res.json();
+      setBody(data.suggestion ?? "");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setSuggestError(data.error ?? "Suggestion failed");
+    }
   }
 
   function copyLink() {
@@ -109,28 +129,54 @@ export function PropertyMessagesPanel({
 
       {/* Reply or invite */}
       {telegramLinked ? (
-        <div className="flex gap-2">
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder={`Message ${tenantName}…`}
-            rows={2}
-            className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-          <Button
-            onClick={send}
-            disabled={sending || !body.trim()}
-            size="icon"
-            className="h-auto w-10 self-end shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              placeholder={`Message ${tenantName}…`}
+              rows={2}
+              className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <div className="flex flex-col gap-1.5 self-end shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={suggest}
+                disabled={suggesting || sending}
+                className="h-8 text-[12px] w-full"
+              >
+                {suggesting ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Thinking…
+                  </>
+                ) : (
+                  <>
+                    <Lightbulb className="mr-1 h-3 w-3" />
+                    Suggest
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={send}
+                disabled={sending || !body.trim()}
+                size="icon"
+                className="h-8 w-full"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          {suggestError && (
+            <p className="text-xs text-destructive">{suggestError}</p>
+          )}
         </div>
       ) : (
         <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
