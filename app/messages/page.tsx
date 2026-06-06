@@ -53,6 +53,7 @@ type Message = {
   tenantId: number
   direction: 'inbound' | 'outbound'
   body: string
+  photoFileId?: string | null
   detectedLanguage: string | null
   isInternalNote: boolean
   createdAt: string
@@ -163,6 +164,13 @@ function MessageBubble({ message }: { message: Message }) {
         'max-w-[75%] rounded-lg px-3 py-2',
         isOutbound ? 'bg-foreground text-background' : 'bg-muted',
       )}>
+        {message.photoFileId && (
+          <img
+            src={`/api/photo/${message.photoFileId}`}
+            alt="maintenance photo"
+            className="rounded-md mb-1.5 max-w-full max-h-48 object-cover"
+          />
+        )}
         <p dir="auto" className="text-[13px] whitespace-pre-wrap break-words">{message.body}</p>
         <p className={cn(
           'text-[10px] mt-1',

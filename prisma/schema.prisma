@@ -220,6 +220,7 @@ model Message {
   tenantId          Int
   direction         MessageDirection
   body              String
+  photoFileId       String?
   detectedLanguage  String?
   telegramMessageId String?
   isInternalNote    Boolean          @default(false)

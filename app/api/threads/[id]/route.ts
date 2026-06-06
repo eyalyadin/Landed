@@ -34,6 +34,7 @@ export async function GET(
         tenantId: true,
         direction: true,
         body: true,
+        photoFileId: true,
         detectedLanguage: true,
         isInternalNote: true,
         createdAt: true,

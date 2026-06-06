@@ -8,6 +8,7 @@ type Msg = {
   id: number;
   direction: "inbound" | "outbound";
   body: string;
+  photoFileId?: string | null;
   createdAt: string;
 };
 
@@ -127,6 +128,13 @@ export function PropertyMessagesPanel({
                     : "rounded-bl-sm border border-border bg-card"
                 }`}
               >
+                {msg.photoFileId && (
+                  <img
+                    src={`/api/photo/${msg.photoFileId}`}
+                    alt="maintenance photo"
+                    className="rounded-lg mb-1.5 max-w-full max-h-48 object-cover"
+                  />
+                )}
                 <p dir="auto" className="leading-relaxed">
                   {msg.body}
                 </p>

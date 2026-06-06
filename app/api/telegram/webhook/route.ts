@@ -132,6 +132,29 @@ export async function POST(req: NextRequest) {
             },
           },
         });
+
+        // Also save the photo as a chat message so it shows in the thread.
+        if (tenant.thread) {
+          const thread = tenant.thread;
+          const messageBody = caption ? caption : jobTitle;
+          await prisma.$transaction([
+            prisma.message.create({
+              data: {
+                threadId: thread.id,
+                tenantId: tenant.id,
+                direction: "inbound",
+                body: messageBody,
+                photoFileId: largest.file_id,
+                telegramMessageId: String(msg.message_id),
+                detectedLanguage: detectLanguage(messageBody),
+              },
+            }),
+            prisma.messageThread.update({
+              where: { id: thread.id },
+              data: { unreadCount: { increment: 1 }, lastMessageAt: new Date() },
+            }),
+          ]);
+        }
       }
       await sendMessage(chatId, PHOTO_ACK);
       return NextResponse.json({ ok: true });

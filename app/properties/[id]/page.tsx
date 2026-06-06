@@ -171,13 +171,14 @@ export default async function PropertyDetailPage({
     ? await prisma.message.findMany({
         where: { threadId, isInternalNote: false },
         orderBy: { createdAt: "asc" },
-        select: { id: true, direction: true, body: true, createdAt: true },
+        select: { id: true, direction: true, body: true, photoFileId: true, createdAt: true },
       })
     : [];
   const initialMessages = rawMessages.map((m) => ({
     id: m.id,
     direction: m.direction as "inbound" | "outbound",
     body: m.body,
+    photoFileId: m.photoFileId ?? null,
     createdAt: m.createdAt.toISOString(),
   }));
 
