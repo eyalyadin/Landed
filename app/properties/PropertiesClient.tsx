@@ -46,6 +46,7 @@ export type PropertyItem = {
     leaseEndDate: string | null
   } | null
   overdueCount: number
+  unreadMessageCount: number
 }
 
 function PropertyTypeIcon({ type }: { type: string }) {
@@ -102,8 +103,13 @@ function PropertyCard({
 
         {/* Icon + address block */}
         <div className="flex flex-col items-center px-4 pt-5 pb-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted mb-3">
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-xl bg-muted mb-3">
             <PropertyTypeIcon type={property.propertyType} />
+            {property.unreadMessageCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-500 px-1 text-[10px] font-semibold text-white">
+                {property.unreadMessageCount > 9 ? '9+' : property.unreadMessageCount}
+              </span>
+            )}
           </div>
           <p dir="auto" className="text-sm font-semibold text-foreground text-center line-clamp-1 w-full">
             {property.address}

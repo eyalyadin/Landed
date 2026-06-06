@@ -14,8 +14,12 @@ export default async function PropertiesPage() {
     include: {
       tenants: {
         orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: { id: true, name: true, leaseEndDate: true },
+        select: {
+          id: true,
+          name: true,
+          leaseEndDate: true,
+          thread: { select: { unreadCount: true } },
+        },
       },
       payments: {
         where: { status: 'overdue', type: 'rent' },
@@ -41,6 +45,7 @@ export default async function PropertiesPage() {
         }
       : null,
     overdueCount: p.payments.length,
+    unreadMessageCount: p.tenants.reduce((sum, t) => sum + (t.thread?.unreadCount ?? 0), 0),
   }))
 
   return (
