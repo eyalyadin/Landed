@@ -452,6 +452,8 @@ export default async function PropertyDetailPage({
                   tenantId={String(tenant.id)}
                   schedules={schedules}
                   invoices={invoices}
+                  hasOverdue={overdueTotal > 0}
+                  telegramLinked={!!tenant.telegramChatId}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground">No tenant — no payment data.</p>

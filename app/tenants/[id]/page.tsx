@@ -178,7 +178,13 @@ export default async function TenantThread({
       {/* Rent */}
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Rent</h2>
-        <RentSection tenantId={String(tenant.id)} schedules={schedules} invoices={invoices} />
+        <RentSection
+          tenantId={String(tenant.id)}
+          schedules={schedules}
+          invoices={invoices}
+          hasOverdue={invoices.some((i) => i.status === "overdue")}
+          telegramLinked={!!tenant.telegramChatId}
+        />
       </section>
     </main>
   );

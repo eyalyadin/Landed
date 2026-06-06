@@ -2,23 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMessage } from "@/lib/telegram";
 import { jerusalemTodayUTCDate } from "@/lib/dates";
-import { formatILS, formatDate } from "@/lib/format";
-
-export const dynamic = "force-dynamic";
-
-function reminderText(lang: string | null, count: number, total: number): string {
-  const amount = formatILS(total);
-  if (lang === "en") {
-    return (
-      `Friendly reminder: you have ${count} overdue rent payment(s) totaling ${amount}. ` +
-      `Please arrange payment as soon as possible. Thank you!`
-    );
-  }
-  return (
-    `תזכורת ידידותית: יש ${count} תשלומי שכר דירה באיחור בסך ${amount}. ` +
-    `נא להסדיר את התשלום בהקדם האפשרי. תודה!`
-  );
-}
+import { formatDate } from "@/lib/format";
+import { reminderText } from "@/lib/reminders";
+import { ensureUpcomingInvoices } from "@/lib/rent";
 
 // GET /api/cron/check-overdue?secret=CRON_SECRET — called daily by Railway cron.
 export async function GET(req: NextRequest) {
@@ -30,6 +16,9 @@ export async function GET(req: NextRequest) {
 
   const today = jerusalemTodayUTCDate();
 
+  // Extend rolling 12-month window for all active schedules before the overdue sweep.
+  const topUpCreated = await ensureUpcomingInvoices();
+
   const newlyOverdue = await prisma.payment.findMany({
     where: { status: "pending", dueDate: { lt: today } },
     include: { tenant: true },
@@ -39,6 +28,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       date: formatDate(today),
+      topUpCreated,
       markedOverdue: 0,
       remindersSent: 0,
     });
@@ -79,6 +69,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     date: formatDate(today),
+    topUpCreated,
     markedOverdue: newlyOverdue.length,
     remindersSent,
   });
