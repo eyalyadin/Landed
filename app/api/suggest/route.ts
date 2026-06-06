@@ -9,7 +9,10 @@ export async function OPTIONS(req: NextRequest) {
   return corsPreflight(req);
 }
 
-// POST /api/suggest { tenantId } → AI-suggested reply in the tenant's language.
+// POST /api/suggest { tenantId }
+// Returns { ok, suggestion, feedbackId }.
+// feedbackId is the SuggestionFeedback row created with action="dismissed".
+// The send endpoint will update it to "accepted" or "edited" when the message is sent.
 export async function POST(req: NextRequest) {
   const payload = (await req.json().catch(() => null)) as { tenantId?: number | string } | null;
   const rawId = payload?.tenantId;
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
     return jsonWithCors(req, { error: "tenant has no message thread" }, { status: 409 });
   }
 
-  // Last ~10 messages from the thread, oldest → newest for a natural transcript.
+  // Last ~10 messages, oldest → newest for a natural transcript.
   const recent = await prisma.message.findMany({
     where: { threadId: tenant.thread.id },
     orderBy: { createdAt: "desc" },
@@ -46,8 +49,24 @@ export async function POST(req: NextRequest) {
   const messages = recent.reverse().map((m) => ({ direction: m.direction, body: m.body }));
 
   try {
-    const suggestion = await suggestReply(messages);
-    return jsonWithCors(req, { ok: true, suggestion });
+    // Pass landlordId so suggestReply can use personalised preferences.
+    const suggestion = await suggestReply(messages, tenant.landlordId);
+
+    // Record the suggestion. Default action is "dismissed" — will be updated to
+    // "accepted" or "edited" if the landlord actually sends it via /api/messages/send.
+    const feedback = await prisma.suggestionFeedback.create({
+      data: {
+        landlordId:    tenant.landlordId,
+        tenantId:      tenant.id,
+        propertyId:    tenant.propertyId ?? undefined,
+        promptContext: messages,
+        suggestedText: suggestion,
+        action:        "dismissed",
+        surface:       "message_reply",
+      },
+    });
+
+    return jsonWithCors(req, { ok: true, suggestion, feedbackId: feedback.id });
   } catch (err) {
     return jsonWithCors(
       req,

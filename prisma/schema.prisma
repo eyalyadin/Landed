@@ -117,6 +117,9 @@ model Landlord {
   name       String
   properties Property[]
   tenants    Tenant[]
+
+  suggestionFeedback  SuggestionFeedback[]
+  preferences         LandlordPreferences?
 }
 
 model Property {
@@ -171,6 +174,7 @@ model Tenant {
   payments       Payment[]
   rentSchedules  RentSchedule[]
   calendarEvents CalendarEvent[]
+  suggestionFeedback SuggestionFeedback[]
 
   @@index([landlordId])
   @@index([propertyId])
@@ -336,4 +340,51 @@ model CalendarEvent {
   @@index([propertyId])
   @@index([tenantId])
   @@index([start])
+}
+
+// ─── Learning Loop ────────────────────────────────────────────────────────────
+// Stores one row per AI suggestion generated. action starts as "dismissed"
+// and is updated to "accepted" or "edited" when the landlord sends the message.
+// The aggregate-preferences cron reads these rows to improve future prompts.
+
+model SuggestionFeedback {
+  id            Int      @id @default(autoincrement())
+  landlordId    Int
+  tenantId      Int
+  propertyId    Int?
+  // The last-N messages passed to Gemini, stored so we can replay/analyse later.
+  promptContext Json     @default("[]")
+  suggestedText String
+  // "dismissed" | "accepted" | "edited"
+  action        String   @default("dismissed")
+  // Populated for "edited": the text the landlord actually sent.
+  finalText     String?
+  // Which AI surface generated this: "message_reply" | future surfaces
+  surface       String   @default("message_reply")
+  createdAt     DateTime @default(now())
+
+  landlord Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([landlordId, createdAt])
+  @@index([tenantId])
+  @@index([action, createdAt])
+}
+
+// Aggregated preferences computed from SuggestionFeedback by the nightly cron.
+// Injected into the Gemini system prompt to personalise future suggestions.
+model LandlordPreferences {
+  id                Int      @id @default(autoincrement())
+  landlordId        Int      @unique
+  // "formal" | "casual" | "neutral"
+  preferredTone     String   @default("neutral")
+  // "he" | "en" | "auto"
+  preferredLanguage String   @default("auto")
+  // Average word count of accepted/edited replies
+  avgReplyLength    Int      @default(30)
+  // String[] of detected editing habits, e.g. ["prefers shorter replies"]
+  editPatterns      Json     @default("[]")
+  updatedAt         DateTime @updatedAt
+
+  landlord Landlord @relation(fields: [landlordId], references: [id], onDelete: Cascade)
 }

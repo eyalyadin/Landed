@@ -10,6 +10,26 @@ export async function OPTIONS(req: NextRequest) {
   return corsPreflight(req);
 }
 
+// Updates the SuggestionFeedback row created by /api/suggest when a message is sent.
+// Silently ignored if feedbackId is absent or the row no longer exists.
+async function recordFeedback(
+  feedbackId: number | null,
+  sentBody: string,
+  originalSuggestion: string | null,
+): Promise<void> {
+  if (!feedbackId || !Number.isFinite(feedbackId)) return;
+  const action = originalSuggestion && sentBody === originalSuggestion ? "accepted" : "edited";
+  await prisma.suggestionFeedback
+    .update({
+      where: { id: feedbackId },
+      data: {
+        action,
+        finalText: action === "edited" ? sentBody : null,
+      },
+    })
+    .catch(() => {}); // ignore if row was already deleted
+}
+
 async function createOutboundMessage({
   tenantId,
   threadId,
@@ -40,16 +60,26 @@ async function createOutboundMessage({
   return message;
 }
 
-// POST /api/messages/send { tenantId, body }
-// Sends a Telegram message to the tenant and stores it as an outbound Message in their thread.
+// POST /api/messages/send { tenantId, body, feedbackId?, originalSuggestion? }
+// feedbackId: the SuggestionFeedback row id returned by /api/suggest.
+// originalSuggestion: the exact text returned by the suggest endpoint.
+// If feedbackId is present and body === originalSuggestion → action "accepted".
+// If feedbackId is present and body !== originalSuggestion → action "edited", finalText = body.
 export async function POST(req: NextRequest) {
   const payload = (await req.json().catch(() => null)) as
-    | { tenantId?: number | string; body?: string }
+    | {
+        tenantId?: number | string;
+        body?: string;
+        feedbackId?: number | string;
+        originalSuggestion?: string;
+      }
     | null;
 
   const rawId = payload?.tenantId;
   const tenantId = rawId !== undefined ? Number(rawId) : NaN;
   const body = payload?.body?.trim();
+  const feedbackId = payload?.feedbackId ? Number(payload.feedbackId) : null;
+  const originalSuggestion = payload?.originalSuggestion ?? null;
 
   if (!Number.isFinite(tenantId) || !body) {
     return jsonWithCors(
@@ -85,6 +115,7 @@ export async function POST(req: NextRequest) {
         threadId: tenant.thread.id,
         body,
       });
+      await recordFeedback(feedbackId, body, originalSuggestion);
       return jsonWithCors(req, { ok: true, message, delivery: "local-only" });
     }
 
@@ -103,6 +134,9 @@ export async function POST(req: NextRequest) {
       body,
       telegramMessageId: String(sent.message_id),
     });
+
+    await recordFeedback(feedbackId, body, originalSuggestion);
+
     return jsonWithCors(req, { ok: true, message });
   } catch (err) {
     if (allowLocalUnlinkedMessages) {
@@ -111,6 +145,7 @@ export async function POST(req: NextRequest) {
         threadId: tenant.thread.id,
         body,
       });
+      await recordFeedback(feedbackId, body, originalSuggestion);
       return jsonWithCors(req, {
         ok: true,
         message,

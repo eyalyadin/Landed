@@ -1,9 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
+import { prisma } from "@/lib/prisma";
 
 // Pinned by the build spec. Do not substitute.
 const MODEL = "gemini-3.5-flash";
 
-const SYSTEM_INSTRUCTION =
+const BASE_SYSTEM_INSTRUCTION =
   "You help an Israeli landlord reply to a tenant. Detect the language of the " +
   "tenant's most recent message (likely Hebrew or English) and write a concise, " +
   "polite suggested reply in that SAME language. Reply with only the message text " +
@@ -14,11 +15,59 @@ export type SuggestMessage = {
   body: string;
 };
 
-export async function suggestReply(messages: SuggestMessage[]): Promise<string> {
+/**
+ * Reads LandlordPreferences from the DB and builds a personalised Gemini
+ * system instruction. Falls back to the base instruction if no preferences exist.
+ *
+ * This is the core of the learning loop: the more the landlord accepts/edits
+ * suggestions, the richer the preferences become, and the more targeted the
+ * prompt becomes — without fine-tuning the model.
+ */
+export async function buildSystemInstruction(landlordId: number): Promise<string> {
+  const prefs = await prisma.landlordPreferences
+    .findUnique({ where: { landlordId } })
+    .catch(() => null);
+
+  if (!prefs) return BASE_SYSTEM_INSTRUCTION;
+
+  const parts: string[] = [BASE_SYSTEM_INSTRUCTION];
+
+  if (prefs.preferredTone === "formal") {
+    parts.push("Use formal, professional language.");
+  } else if (prefs.preferredTone === "casual") {
+    parts.push("Use a warm, informal, and friendly tone.");
+  }
+
+  if (prefs.preferredLanguage === "he") {
+    parts.push("Unless the tenant writes in English, reply in Hebrew.");
+  } else if (prefs.preferredLanguage === "en") {
+    parts.push("Unless the tenant writes in Hebrew, reply in English.");
+  }
+
+  if (prefs.avgReplyLength > 0) {
+    parts.push(`Keep replies around ${prefs.avgReplyLength} words.`);
+  }
+
+  const patterns = prefs.editPatterns as string[];
+  if (Array.isArray(patterns) && patterns.length > 0) {
+    parts.push(`This landlord tends to: ${patterns.join(", ")}.`);
+  }
+
+  return parts.join(" ");
+}
+
+export async function suggestReply(
+  messages: SuggestMessage[],
+  landlordId?: number,
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const ai = new GoogleGenAI({ apiKey });
+
+  const systemInstruction = landlordId
+    ? await buildSystemInstruction(landlordId)
+    : BASE_SYSTEM_INSTRUCTION;
 
   const transcript = messages
     .map((m) => `${m.direction === "inbound" ? "Tenant" : "Landlord"}: ${m.body}`)
@@ -27,7 +76,7 @@ export async function suggestReply(messages: SuggestMessage[]): Promise<string> 
   const response = await ai.models.generateContent({
     model: MODEL,
     contents: `Conversation so far:\n${transcript}\n\nWrite the landlord's next reply.`,
-    config: { systemInstruction: SYSTEM_INSTRUCTION },
+    config: { systemInstruction },
   });
 
   const text = response.text?.trim();

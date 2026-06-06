@@ -34,6 +34,9 @@ export function PropertyMessagesPanel({
   const [suggesting, setSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Learning loop: track which AI suggestion is currently in the textarea
+  const [activeFeedbackId, setActiveFeedbackId] = useState<number | null>(null);
+  const [originalSuggestion, setOriginalSuggestion] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,10 +51,18 @@ export function PropertyMessagesPanel({
     const res = await fetch("/api/messages/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId, body: text }),
+      body: JSON.stringify({
+        tenantId,
+        body: text,
+        // Learning loop: tell the server whether this message was an AI suggestion
+        feedbackId: activeFeedbackId,
+        originalSuggestion,
+      }),
     });
     if (res.ok) {
       setBody("");
+      setActiveFeedbackId(null);
+      setOriginalSuggestion(null);
       if (threadId) {
         const data = await fetch(`/api/threads/${threadId}`).then((r) =>
           r.json()
@@ -73,7 +84,11 @@ export function PropertyMessagesPanel({
     setSuggesting(false);
     if (res.ok) {
       const data = await res.json();
-      setBody(data.suggestion ?? "");
+      const text = data.suggestion ?? "";
+      setBody(text);
+      // Store feedback tracking state so send() can classify accept/edit/dismiss
+      setActiveFeedbackId(data.feedbackId ?? null);
+      setOriginalSuggestion(text);
     } else {
       const data = await res.json().catch(() => ({}));
       setSuggestError(data.error ?? "Suggestion failed");
