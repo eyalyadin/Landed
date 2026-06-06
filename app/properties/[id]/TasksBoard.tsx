@@ -127,7 +127,7 @@ export function TasksBoard({
         return (
           <div
             key={col.status}
-            className={`min-w-[220px] flex-shrink-0 rounded-lg border transition-colors ${
+            className={`w-[220px] flex-shrink-0 rounded-lg border transition-colors ${
               isDragOver
                 ? "border-primary bg-primary/5"
                 : "border-border bg-muted/30"
@@ -226,7 +226,7 @@ export function TasksBoard({
                       )}
 
                       {/* Title + priority dot */}
-                      <div className="flex items-start gap-1.5">
+                      <div className="flex items-start gap-1.5 min-w-0">
                         <span
                           className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
                             task.priority === "urgent" ? "bg-red-500" :
@@ -236,7 +236,7 @@ export function TasksBoard({
                         />
                         <p
                           dir="auto"
-                          className="text-[13px] font-medium leading-tight text-foreground"
+                          className="text-[13px] font-medium leading-tight text-foreground min-w-0 break-words"
                         >
                           {task.title}
                         </p>
