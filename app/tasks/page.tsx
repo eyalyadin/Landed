@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { TasksClient, type TaskRow } from './TasksClient'
 import { AddTaskButton } from './AddTaskButton'
@@ -6,7 +7,9 @@ import { AddTaskButton } from './AddTaskButton'
 export const dynamic = 'force-dynamic'
 
 export default async function TasksPage() {
+  const appUser = await requireAppUser()
   const jobs = await prisma.job.findMany({
+    where: { property: { ownerId: appUser.id } },
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     include: {
       property: { select: { id: true, address: true } },

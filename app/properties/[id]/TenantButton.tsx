@@ -237,7 +237,7 @@ export function TenantButton({
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />Loading…
                     </div>
                   ) : unassigned.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2">No unassigned tenants — use "Create new" instead.</p>
+                    <p className="text-sm text-muted-foreground py-2">No unassigned tenants — use &quot;Create new&quot; instead.</p>
                   ) : (
                     <Select value={selectedTenantId} onValueChange={(v) => setSelectedTenantId(v ?? '')}>
                       <SelectTrigger className="h-9 text-[13px]">

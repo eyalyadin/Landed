@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  assertOwnedProperty,
+  notFoundResponse,
+  requireAppUserForApi,
+  unauthorized,
+} from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/documents — record a new contract/document, optionally with a PDF file.
-// Accepts multipart/form-data (not JSON) so the browser can attach the file.
-// Fields: documentName (required), documentType, propertyId (required), uploadedAt, file (PDF, optional).
+// POST /api/documents - record a new contract/document for an owned property.
 export async function POST(req: Request) {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const formData = await req.formData();
     const documentName = (formData.get("documentName") as string | null)?.trim();
     const documentType = formData.get("documentType") as string | null;
@@ -19,7 +26,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "documentName and propertyId are required" }, { status: 400 });
     }
 
-    // Validate and read PDF file bytes if provided
+    const ownedProperty = await assertOwnedProperty(parseInt(propertyId, 10), appUser.id);
+    if (!ownedProperty) return notFoundResponse();
+
     let fileData: Uint8Array<ArrayBuffer> | undefined;
     if (file && file.size > 0) {
       const name = file.name.toLowerCase();
@@ -31,7 +40,7 @@ export async function POST(req: Request) {
 
     const doc = await prisma.document.create({
       data: {
-        propertyId: parseInt(propertyId, 10),
+        propertyId: ownedProperty.id,
         documentName,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         documentType: (documentType ?? "other") as any,
@@ -45,11 +54,15 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/documents — list documents (metadata only; bytes are served via /api/documents/[id]/file).
+// GET /api/documents - list owned documents.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const [docs, withFile] = await Promise.all([
       prisma.document.findMany({
+        where: { property: { ownerId: appUser.id } },
         orderBy: { uploadedAt: "desc" },
         select: {
           id: true,
@@ -60,7 +73,12 @@ export async function GET() {
           property: { select: { address: true, unitLabel: true } },
         },
       }),
-      prisma.$queryRaw<{ id: number }[]>`SELECT id FROM "Document" WHERE "fileData" IS NOT NULL`,
+      prisma.$queryRaw<{ id: number }[]>`
+        SELECT d.id
+        FROM "Document" d
+        JOIN "Property" p ON p.id = d."propertyId"
+        WHERE d."fileData" IS NOT NULL AND p."ownerId" = ${appUser.id}
+      `,
     ]);
 
     const fileIds = new Set(withFile.map((r) => r.id));

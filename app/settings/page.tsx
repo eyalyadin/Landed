@@ -1,12 +1,12 @@
-import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
+import { requireAppUser } from '@/lib/current-user'
 import { SettingsClient } from './SettingsClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
-  const landlord = await prisma.landlord.findFirst({ select: { name: true } })
-  const landlordName = landlord?.name ?? 'Landlord'
+  const appUser = await requireAppUser()
+  const landlordName = appUser.name ?? appUser.email
 
   return (
     <AppShell>

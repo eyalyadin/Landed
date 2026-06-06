@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi, unauthorized } from "@/lib/current-user";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/properties — create a property, optionally with a first tenant.
+// POST /api/properties - create a property, optionally with a first tenant.
 export async function POST(req: Request) {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const body = await req.json();
     const {
       address, city, propertyType, unitLabel, monthlyRent,
@@ -17,12 +21,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "address, city and monthlyRent are required" }, { status: 400 });
     }
 
-    const landlord = await prisma.landlord.findFirst();
-    if (!landlord) return NextResponse.json({ error: "No landlord found" }, { status: 500 });
+    const landlord =
+      (await prisma.landlord.findFirst()) ??
+      (await prisma.landlord.create({ data: { name: appUser.name ?? "Landlord" } }));
 
     const property = await prisma.property.create({
       data: {
         landlordId: landlord.id,
+        ownerId: appUser.id,
         address,
         city,
         propertyType: propertyType ?? "apartment",
@@ -54,10 +60,14 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/properties — returns all properties for the landlord.
+// GET /api/properties - returns all properties for the logged-in owner.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const properties = await prisma.property.findMany({
+      where: { ownerId: appUser.id },
       orderBy: { address: "asc" },
       include: {
         _count: {

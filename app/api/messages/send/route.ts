@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendMessage } from "@/lib/telegram";
 import { detectLanguage } from "@/lib/lang";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
+import { requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +17,13 @@ async function recordFeedback(
   feedbackId: number | null,
   sentBody: string,
   originalSuggestion: string | null,
+  ownerId: number,
 ): Promise<void> {
   if (!feedbackId || !Number.isFinite(feedbackId)) return;
   const action = originalSuggestion && sentBody === originalSuggestion ? "accepted" : "edited";
   await prisma.suggestionFeedback
-    .update({
-      where: { id: feedbackId },
+    .updateMany({
+      where: { id: feedbackId, tenant: { property: { ownerId } } },
       data: {
         action,
         finalText: action === "edited" ? sentBody : null,
@@ -66,6 +68,9 @@ async function createOutboundMessage({
 // If feedbackId is present and body === originalSuggestion → action "accepted".
 // If feedbackId is present and body !== originalSuggestion → action "edited", finalText = body.
 export async function POST(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const payload = (await req.json().catch(() => null)) as
     | {
         tenantId?: number | string;
@@ -89,8 +94,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, property: { ownerId: appUser.id } },
     include: { thread: true },
   });
   if (!tenant) {
@@ -115,7 +120,7 @@ export async function POST(req: NextRequest) {
         threadId: tenant.thread.id,
         body,
       });
-      await recordFeedback(feedbackId, body, originalSuggestion);
+      await recordFeedback(feedbackId, body, originalSuggestion, appUser.id);
       return jsonWithCors(req, { ok: true, message, delivery: "local-only" });
     }
 
@@ -135,7 +140,7 @@ export async function POST(req: NextRequest) {
       telegramMessageId: String(sent.message_id),
     });
 
-    await recordFeedback(feedbackId, body, originalSuggestion);
+    await recordFeedback(feedbackId, body, originalSuggestion, appUser.id);
 
     return jsonWithCors(req, { ok: true, message });
   } catch (err) {
@@ -145,7 +150,7 @@ export async function POST(req: NextRequest) {
         threadId: tenant.thread.id,
         body,
       });
-      await recordFeedback(feedbackId, body, originalSuggestion);
+      await recordFeedback(feedbackId, body, originalSuggestion, appUser.id);
       return jsonWithCors(req, {
         ok: true,
         message,

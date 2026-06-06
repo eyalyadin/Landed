@@ -1,4 +1,4 @@
-import { PrismaClient } from "../app/generated/prisma/client";
+import { Prisma, PrismaClient } from "../app/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { addMonths, setDate } from "date-fns";
 
@@ -33,10 +33,15 @@ async function main() {
       "JobAttachment", "Job",
       "Document", "Vendor",
       "Message", "MessageThread",
-      "Tenant", "Property", "Landlord"
+      "Tenant", "Property", "Landlord", "AppUser"
     RESTART IDENTITY CASCADE
   `);
   console.log("Tables cleared.");
+
+  const owner = await prisma.appUser.create({
+    data: { clerkId: "demo-owner", email: "demo@landed.local", name: "Demo Owner" },
+  });
+  console.log(`AppUser: ${owner.name} (id=${owner.id})`);
 
   // ── Landlord ──────────────────────────────────────────────────────────────
   const landlord = await prisma.landlord.create({ data: { name: "בעל הבית" } });
@@ -47,6 +52,7 @@ async function main() {
     prisma.property.create({
       data: {
         landlordId: landlord.id,
+        ownerId: owner.id,
         address: "רחוב האלון 123, דירה 4A",
         city: "תל אביב",
         propertyType: "apartment",
@@ -63,6 +69,7 @@ async function main() {
     prisma.property.create({
       data: {
         landlordId: landlord.id,
+        ownerId: owner.id,
         address: "שדרות האורן 456",
         city: "חיפה",
         propertyType: "house",
@@ -78,6 +85,7 @@ async function main() {
       data: {
         landlordId: landlord.id,
         address: "רחוב השוק 789, יח׳ 202",
+        ownerId: owner.id,
         city: "תל אביב",
         propertyType: "condo",
         unitLabel: "202",
@@ -93,6 +101,7 @@ async function main() {
       data: {
         landlordId: landlord.id,
         address: "רחוב האלמה 321",
+        ownerId: owner.id,
         city: "ירושלים",
         propertyType: "apartment",
         occupancyStatus: "vacant",
@@ -105,6 +114,7 @@ async function main() {
       data: {
         landlordId: landlord.id,
         address: "מרפסת הים 555, יח׳ 8",
+        ownerId: owner.id,
         city: "הרצליה",
         propertyType: "apartment",
         unitLabel: "8",
@@ -120,6 +130,7 @@ async function main() {
       data: {
         landlordId: landlord.id,
         address: "שדרות המשלחת 888",
+        ownerId: owner.id,
         city: "באר שבע",
         propertyType: "house",
         occupancyStatus: "occupied",
@@ -330,7 +341,7 @@ async function main() {
       { name: "מנעולן מהיר",        phone: "+972506006006",                                   category: "locksmith",     serviceArea: "תל אביב",         isPreferred: true,  contactPerson: "מנעולן",     rating: 4.6, activeJobs: 1, completedJobs: 18, notes: "זמין 24/7" },
       { name: "נקיון כסף",          phone: "+972507007007", email: "book@silver.co.il",       category: "cleaning",      serviceArea: "מרכז ודרום",       isPreferred: false, contactPerson: "נקיון כסף",  rating: 4.3, activeJobs: 0, completedJobs: 12, notes: "ניקוי עמוק לפינוי דירות" },
       { name: "מומחי מכשירים",      phone: "+972508008008",                                   category: "appliance_repair", serviceArea: "כל הארץ",      isPreferred: false, contactPerson: "מומחי מכשירים", rating: 4.0, activeJobs: 1, completedJobs: 6 },
-    ],
+    ].map((vendor) => ({ ...vendor, ownerId: owner.id })) as Prisma.VendorCreateManyInput[],
   });
   console.log("Vendors seeded.");
 
@@ -411,7 +422,7 @@ async function main() {
       { title: "תזכורת חידוש חוזה — רחוב השוק",   eventType: "renewal_reminder", propertyId: prop3.id, tenantId: t3.id, start: new Date("2025-10-01"), notes: "90 יום לפני סיום חוזה" },
       { title: "מועד גביית שכר דירה — כל הנכסים", eventType: "rent_due",        start: new Date("2026-06-01"), notes: "גביית שכר דירה חודשית" },
       { title: "חוזה מסתיים — רחוב האלון 4A",     eventType: "lease_end",       propertyId: prop1.id, tenantId: t1.id, start: new Date("2026-02-28"), notes: "דנה לוי — חוזה מסתיים" },
-    ],
+    ].map((event) => ({ ...event, ownerId: owner.id })) as Prisma.CalendarEventCreateManyInput[],
   });
   console.log("Calendar events seeded.");
 

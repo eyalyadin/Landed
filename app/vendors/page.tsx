@@ -1,11 +1,14 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { VendorsClient, type VendorRow } from './VendorsClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function VendorsPage() {
+  const appUser = await requireAppUser()
   const vendors = await prisma.vendor.findMany({
+    where: { ownerId: appUser.id },
     orderBy: [{ isPreferred: 'desc' }, { name: 'asc' }],
   })
 

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
 import { draftVendorNotice, type SuggestMessage } from "@/lib/gemini";
+import { requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,9 @@ export async function OPTIONS(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const payload = (await req.json().catch(() => null)) as {
     tenantId?: unknown;
     vendorName?: unknown;
@@ -37,8 +41,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: tenantId },
+    const tenant = await prisma.tenant.findFirst({
+      where: { id: tenantId, property: { ownerId: appUser.id } },
       select: { name: true, thread: { select: { id: true } } },
     });
 

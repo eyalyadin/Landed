@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { ContractsClient, type ContractRow, type PropertyOption } from './ContractsClient'
 import { AddContractButton } from './AddContractButton'
@@ -6,8 +7,10 @@ import { AddContractButton } from './AddContractButton'
 export const dynamic = 'force-dynamic'
 
 export default async function ContractsPage() {
+  const appUser = await requireAppUser()
   const [documents, properties, docsWithFile] = await Promise.all([
     prisma.document.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: { uploadedAt: 'desc' },
       select: {
         id: true,
@@ -28,10 +31,16 @@ export default async function ContractsPage() {
       },
     }),
     prisma.property.findMany({
+      where: { ownerId: appUser.id },
       orderBy: { address: 'asc' },
       select: { id: true, address: true },
     }),
-    prisma.$queryRaw<{ id: number }[]>`SELECT id FROM "Document" WHERE "fileData" IS NOT NULL`,
+    prisma.$queryRaw<{ id: number }[]>`
+      SELECT d.id
+      FROM "Document" d
+      JOIN "Property" p ON p.id = d."propertyId"
+      WHERE d."fileData" IS NOT NULL AND p."ownerId" = ${appUser.id}
+    `,
   ])
 
   const fileIdSet = new Set(docsWithFile.map((r: { id: number }) => r.id))

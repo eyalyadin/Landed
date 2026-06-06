@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notFoundResponse, requireAppUserForApi, unauthorized } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/threads/[id] — messages in a thread, oldest → newest.
+// GET /api/threads/[id] - messages in an owned thread, oldest to newest.
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return unauthorized();
+
   const { id } = await params;
   const threadId = parseInt(id, 10);
   if (!Number.isFinite(threadId)) {
@@ -15,8 +19,14 @@ export async function GET(
   }
 
   try {
+    const thread = await prisma.messageThread.findFirst({
+      where: { id: threadId, tenant: { property: { ownerId: appUser.id } } },
+      select: { id: true },
+    });
+    if (!thread) return notFoundResponse();
+
     const messages = await prisma.message.findMany({
-      where: { threadId },
+      where: { threadId: thread.id },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -30,11 +40,10 @@ export async function GET(
       },
     });
 
-    // Mark thread as read
     await prisma.messageThread.update({
-      where: { id: threadId },
+      where: { id: thread.id },
       data: { unreadCount: 0 },
-    }).catch(() => { /* non-fatal */ });
+    }).catch(() => {});
 
     return NextResponse.json(
       messages.map((m) => ({

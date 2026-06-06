@@ -1,5 +1,6 @@
 'use client'
 
+import { UserButton } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import {
   Building2,
@@ -175,6 +176,7 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
               {pageAction}
             </div>
           )}
+          <UserButton />
         </header>
 
         {/* Page Content */}

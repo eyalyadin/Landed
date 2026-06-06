@@ -1,16 +1,14 @@
-// One-shot endpoint to insert the Property Health demo tenant.
-// Protected by CRON_SECRET — same secret used by the overdue-check cron job.
-// Safe to call repeatedly (idempotent cleanup at the start).
-// Remove this file after you no longer need to reseed.
+// Non-destructive endpoint to add a Property Health demo property for the
+// logged-in Clerk/AppUser owner. Safe to call repeatedly.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi, unauthorized } from "@/lib/current-user";
 import { addMonths, setDate } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_LINK_TOKEN = "health-demo-avi";
-const DEMO_ADDRESS    = "רחוב הברוש 12";
+const DEMO_ADDRESS = "Health Demo Property 12";
 
 function generateDueDates(startDate: Date, dueDayOfMonth: number, count: number): Date[] {
   const dates: Date[] = [];
@@ -20,70 +18,60 @@ function generateDueDates(startDate: Date, dueDayOfMonth: number, count: number)
   return dates;
 }
 
-export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  const secret = process.env.CRON_SECRET;
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export async function POST() {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return unauthorized();
 
-  // ── Idempotent cleanup ──────────────────────────────────────────────────
-  const existingTenant = await prisma.tenant.findUnique({
-    where: { linkToken: DEMO_LINK_TOKEN },
-  });
-  if (existingTenant) {
-    await prisma.tenant.delete({ where: { id: existingTenant.id } });
-  }
-  const existingProp = await prisma.property.findFirst({
-    where: { address: DEMO_ADDRESS },
-  });
-  if (existingProp) {
-    await prisma.property.delete({ where: { id: existingProp.id } });
-  }
+  const linkToken = `health-demo-avi-${appUser.id}`;
 
-  // ── Landlord ────────────────────────────────────────────────────────────
-  let landlord = await prisma.landlord.findUnique({ where: { id: 1 } });
-  if (!landlord) {
-    landlord = await prisma.landlord.create({ data: { name: "בעל הבית" } });
-  }
+  const landlord =
+    (await prisma.landlord.findFirst()) ??
+    (await prisma.landlord.create({ data: { name: appUser.name ?? "Landlord" } }));
 
-  // ── Property ────────────────────────────────────────────────────────────
-  const property = await prisma.property.create({
-    data: {
-      landlordId:      landlord.id,
-      address:         DEMO_ADDRESS,
-      city:            "תל אביב",
-      propertyType:    "apartment",
-      unitLabel:       "3B",
-      occupancyStatus: "occupied",
-      monthlyRent:     5800,
-      rentCurrency:    "ILS",
-      leaseStartDate:  new Date("2025-09-01"),
-      leaseEndDate:    new Date("2026-08-31"),
-      notes:           "דירת דגם לבדיקת Property Health",
-    },
+  let property = await prisma.property.findFirst({
+    where: { ownerId: appUser.id, address: DEMO_ADDRESS },
   });
 
-  // ── Tenant ──────────────────────────────────────────────────────────────
-  const tenant = await prisma.tenant.create({
-    data: {
-      landlordId:        landlord.id,
-      propertyId:        property.id,
-      name:              "אבי גלעד",
-      email:             "avi.gilad@demo.com",
-      phone:             "+972509998877",
-      linkToken:         DEMO_LINK_TOKEN,
-      preferredLanguage: "he",
-      moveInDate:        new Date("2025-09-01"),
-      leaseEndDate:      new Date("2026-08-31"),
-      paymentMethod:     "העברה בנקאית",
-      contractStatus:    "active",
-      keysAccessNotes:   "2 מפתחות, שלט חניה",
-      notes:             "שוכר דגם — בדיקת ציון בריאות נכס",
-    },
-  });
+  if (!property) {
+    property = await prisma.property.create({
+      data: {
+        ownerId: appUser.id,
+        landlordId: landlord.id,
+        address: DEMO_ADDRESS,
+        city: "Tel Aviv",
+        propertyType: "apartment",
+        unitLabel: "3B",
+        occupancyStatus: "occupied",
+        monthlyRent: 5800,
+        rentCurrency: "ILS",
+        leaseStartDate: new Date("2025-09-01"),
+        leaseEndDate: new Date("2026-08-31"),
+        notes: "Demo property for Property Health scoring",
+      },
+    });
+  }
 
-  // ── MessageThread (trigger-created; fallback if trigger not active) ─────
+  let tenant = await prisma.tenant.findUnique({ where: { linkToken } });
+  if (!tenant) {
+    tenant = await prisma.tenant.create({
+      data: {
+        landlordId: landlord.id,
+        propertyId: property.id,
+        name: "Avi Gilad",
+        email: "avi.gilad@demo.local",
+        phone: "+972509998877",
+        linkToken,
+        preferredLanguage: "he",
+        moveInDate: new Date("2025-09-01"),
+        leaseEndDate: new Date("2026-08-31"),
+        paymentMethod: "Bank transfer",
+        contractStatus: "active",
+        keysAccessNotes: "2 keys, parking remote",
+        notes: "Demo tenant for Property Health scoring",
+      },
+    });
+  }
+
   let thread = await prisma.messageThread.findUnique({
     where: { tenantId: tenant.id },
   });
@@ -93,65 +81,113 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── Messages — plumbing complaint thread, Mar–Jun 2026 ──────────────────
-  await prisma.message.createMany({
-    data: [
-      { threadId: thread.id, tenantId: tenant.id, direction: "inbound",  body: "שלום, שוב יש בעיה עם הצנרת. הברז בשירותים מטפטף כבר שלושה ימים.",                detectedLanguage: "he", createdAt: new Date("2026-03-10T09:00:00Z") },
-      { threadId: thread.id, tenantId: tenant.id, direction: "outbound", body: "שלום אבי, תודה שעדכנת. שלחתי שרברב — הוא יגיע ביום חמישי.",                    detectedLanguage: "he", createdAt: new Date("2026-03-10T14:00:00Z") },
-      { threadId: thread.id, tenantId: tenant.id, direction: "inbound",  body: "השרברב תיקן, אבל עכשיו יש דליפה קטנה מתחת לכיור במטבח.",                      detectedLanguage: "he", createdAt: new Date("2026-04-22T10:30:00Z") },
-      { threadId: thread.id, tenantId: tenant.id, direction: "outbound", body: "ראיתי, מתאם שרברב לבדיקה מחדש. השבוע הקרוב.",                                  detectedLanguage: "he", createdAt: new Date("2026-04-22T16:00:00Z") },
-      { threadId: thread.id, tenantId: tenant.id, direction: "inbound",  body: "שלום, חזרה בעיית הצנרת — הפעם לחץ מים נמוך בכל הדירה.",                        detectedLanguage: "he", createdAt: new Date("2026-05-18T08:00:00Z") },
-      { threadId: thread.id, tenantId: tenant.id, direction: "inbound",  body: "הלחץ עדיין בעיה. האם יוצא שרברב השבוע?",                                        detectedLanguage: "he", createdAt: new Date("2026-06-01T09:15:00Z") },
-    ],
-  });
-  await prisma.messageThread.update({
-    where: { id: thread.id },
-    data: {
-      unreadCount:   2,
-      lastMessageAt: new Date("2026-06-01T09:15:00Z"),
-      urgency:       "urgent",
-      status:        "open",
-      summary:       "שוכר מדווח על בעיות צנרת חוזרות",
-    },
-  });
+  const messageCount = await prisma.message.count({ where: { threadId: thread.id } });
+  if (messageCount === 0) {
+    await prisma.message.createMany({
+      data: [
+        {
+          threadId: thread.id,
+          tenantId: tenant.id,
+          direction: "inbound",
+          body: "Hi, the bathroom tap has been dripping for three days.",
+          detectedLanguage: "en",
+          createdAt: new Date("2026-03-10T09:00:00Z"),
+        },
+        {
+          threadId: thread.id,
+          tenantId: tenant.id,
+          direction: "outbound",
+          body: "Thanks for flagging it. I will send a plumber this week.",
+          detectedLanguage: "en",
+          createdAt: new Date("2026-03-10T14:00:00Z"),
+        },
+        {
+          threadId: thread.id,
+          tenantId: tenant.id,
+          direction: "inbound",
+          body: "The water pressure issue is back. Can someone check it urgently?",
+          detectedLanguage: "en",
+          createdAt: new Date("2026-06-01T09:15:00Z"),
+        },
+      ],
+    });
+    await prisma.messageThread.update({
+      where: { id: thread.id },
+      data: {
+        unreadCount: 1,
+        lastMessageAt: new Date("2026-06-01T09:15:00Z"),
+        urgency: "urgent",
+        status: "open",
+        summary: "Tenant reports recurring plumbing issues",
+      },
+    });
+  }
 
-  // ── Jobs ────────────────────────────────────────────────────────────────
-  await prisma.job.createMany({
-    data: [
-      { propertyId: property.id, tenantId: tenant.id, title: "תיקון ברז מטפטף בשירותים",                category: "repair",      priority: "medium", status: "completed",   dueDate: new Date("2026-03-13"), contractorName: 'אינסטלציה בע"מ', notes: "ברז חדש הותקן",                                      createdAt: new Date("2026-03-10T09:30:00Z") },
-      { propertyId: property.id, tenantId: tenant.id, title: "תיקון דליפה מתחת לכיור מטבח",            category: "repair",      priority: "medium", status: "completed",   dueDate: new Date("2026-04-25"), contractorName: 'אינסטלציה בע"מ', notes: "צינור חיבור הוחלף",                                  createdAt: new Date("2026-04-22T11:00:00Z") },
-      { propertyId: property.id, tenantId: tenant.id, title: "בדיקת לחץ מים נמוך — כל הדירה",          category: "repair",      priority: "high",   status: "in_progress", dueDate: new Date("2026-05-22"), contractorName: 'אינסטלציה בע"מ', notes: "ממתין לאיתור מקור הבעיה",                             createdAt: new Date("2026-05-18T08:30:00Z") },
-      { propertyId: property.id, tenantId: tenant.id, title: "חזרת בעיית לחץ מים — לבדיקה דחופה",     category: "repair",      priority: "urgent", status: "new",         dueDate: new Date("2026-06-08"),                                   notes: "הבעיה חזרה אחרי התיקון האחרון",   sourceThreadId: thread.id, createdAt: new Date("2026-06-01T09:45:00Z") },
-      { propertyId: property.id,                      title: "בדיקה שנתית — רחוב הברוש 3B",            category: "inspection",  priority: "low",    status: "new",         dueDate: new Date("2026-07-01"),                                   notes: "בדיקה שגרתית",                                             createdAt: new Date("2026-06-01T10:00:00Z") },
-      { propertyId: property.id,                      title: "תיקוני צבע קטנים — מסדרון",              category: "maintenance", priority: "low",    status: "completed",   dueDate: new Date("2026-03-20"), contractorName: "צבע טרי",        notes: "עבודה הושלמה",                                             createdAt: new Date("2026-03-15T11:00:00Z") },
-    ],
-  });
+  const jobCount = await prisma.job.count({ where: { propertyId: property.id } });
+  if (jobCount === 0) {
+    await prisma.job.createMany({
+      data: [
+        {
+          propertyId: property.id,
+          tenantId: tenant.id,
+          title: "Bathroom tap repair",
+          category: "repair",
+          priority: "medium",
+          status: "completed",
+          dueDate: new Date("2026-03-13"),
+          contractorName: "Demo Plumbing",
+          createdAt: new Date("2026-03-10T09:30:00Z"),
+        },
+        {
+          propertyId: property.id,
+          tenantId: tenant.id,
+          title: "Recurring low water pressure",
+          category: "repair",
+          priority: "urgent",
+          status: "new",
+          dueDate: new Date("2026-06-08"),
+          sourceThreadId: thread.id,
+          createdAt: new Date("2026-06-01T09:45:00Z"),
+        },
+        {
+          propertyId: property.id,
+          title: "Annual inspection",
+          category: "inspection",
+          priority: "low",
+          status: "new",
+          dueDate: new Date("2026-07-01"),
+          createdAt: new Date("2026-06-01T10:00:00Z"),
+        },
+      ],
+    });
+  }
 
-  // ── RentSchedule + Payments ─────────────────────────────────────────────
-  const schedule = await prisma.rentSchedule.create({
-    data: { tenantId: tenant.id, amount: 5800, dueDayOfMonth: 1, startDate: new Date("2025-09-01"), active: true },
-  });
-  const today = new Date("2026-06-06");
-  const dueDates = generateDueDates(new Date("2025-09-01"), 1, 12);
-  await prisma.payment.createMany({
-    data: dueDates.map((d) => ({
-      tenantId:       tenant.id,
-      propertyId:     property.id,
-      rentScheduleId: schedule.id,
-      amount:         5800,
-      currency:       "ILS",
-      type:           "rent" as const,
-      status:         d < today ? ("paid" as const) : ("pending" as const),
-      dueDate:        d,
-      paidDate:       d < today ? d : null,
-    })),
-  });
+  const scheduleCount = await prisma.rentSchedule.count({ where: { tenantId: tenant.id } });
+  if (scheduleCount === 0) {
+    const schedule = await prisma.rentSchedule.create({
+      data: { tenantId: tenant.id, amount: 5800, dueDayOfMonth: 1, startDate: new Date("2025-09-01"), active: true },
+    });
+    const today = new Date("2026-06-06");
+    const dueDates = generateDueDates(new Date("2025-09-01"), 1, 12);
+    await prisma.payment.createMany({
+      data: dueDates.map((dueDate) => ({
+        tenantId: tenant.id,
+        propertyId: property.id,
+        rentScheduleId: schedule.id,
+        amount: 5800,
+        currency: "ILS",
+        type: "rent" as const,
+        status: dueDate < today ? ("paid" as const) : ("pending" as const),
+        dueDate,
+        paidDate: dueDate < today ? dueDate : null,
+      })),
+    });
+  }
 
   return NextResponse.json({
     ok: true,
     propertyId: property.id,
-    tenantId:   tenant.id,
-    url:        `/properties/${property.id}`,
-    message:    `Demo tenant "אבי גלעד" created. Open /properties/${property.id} to see the Property Health card.`,
+    tenantId: tenant.id,
+    url: `/properties/${property.id}`,
   });
 }

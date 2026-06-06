@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi, unauthorized } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/calendar — all calendar events.
+// GET /api/calendar - calendar events for the logged-in owner.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const events = await prisma.calendarEvent.findMany({
+      where: {
+        OR: [
+          { ownerId: appUser.id },
+          { property: { ownerId: appUser.id } },
+          { tenant: { property: { ownerId: appUser.id } } },
+          { job: { property: { ownerId: appUser.id } } },
+        ],
+      },
       orderBy: { start: "asc" },
       include: {
         property: { select: { address: true } },

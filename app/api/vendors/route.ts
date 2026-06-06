@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi, unauthorized } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/vendors
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const vendors = await prisma.vendor.findMany({
+      where: { ownerId: appUser.id },
       orderBy: [{ isPreferred: "desc" }, { name: "asc" }],
     });
 

@@ -118,7 +118,8 @@ function shiftMonth(key: string, delta: number): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function PaymentsClient({ payments, expectedMonthly, tenants }: Props) {
-  const now = new Date()
+  const [now] = useState(() => new Date())
+  const nowTime = now.getTime()
   const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
   const [selectedMonth, setSelectedMonth] = useState(todayKey)
@@ -596,7 +597,7 @@ export function PaymentsClient({ payments, expectedMonthly, tenants }: Props) {
             </div>
             {overduePayments.map((payment, i) => {
               const daysLate = Math.floor(
-                (Date.now() - new Date(payment.dueDate).getTime()) / 86400000
+                (nowTime - new Date(payment.dueDate).getTime()) / 86400000
               )
               return (
                 <div

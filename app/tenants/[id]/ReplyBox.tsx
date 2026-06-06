@@ -56,7 +56,7 @@ export default function ReplyBox({
   if (!linked) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500 dark:border-zinc-700">
-        This tenant hasn't linked Telegram yet — sending is disabled.
+        This tenant hasn&apos;t linked Telegram yet — sending is disabled.
       </div>
     );
   }

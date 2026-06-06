@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireAppUser } from "@/lib/current-user";
 import { formatDateTime } from "@/lib/format";
 import { dec, dateIso } from "@/lib/serialize";
 import ReplyBox from "./ReplyBox";
@@ -25,9 +26,10 @@ export default async function TenantThread({
   const { id } = await params;
   const tenantId = parseInt(id, 10);
   if (!Number.isFinite(tenantId)) notFound();
+  const appUser = await requireAppUser();
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, property: { ownerId: appUser.id } },
     include: {
       property: { select: { address: true, unitLabel: true } },
       thread: {

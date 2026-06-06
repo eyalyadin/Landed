@@ -10,10 +10,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMessage } from "@/lib/telegram";
 import { reminderText } from "@/lib/reminders";
+import { requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
   const body = await req.json().catch(() => ({}));
   const tenantId = Number(body.tenantId);
 
@@ -21,8 +25,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "tenantId required" }, { status: 400 });
   }
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, property: { ownerId: appUser.id } },
     select: { telegramChatId: true, preferredLanguage: true },
   });
 
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
   }
 
   const overdue = await prisma.payment.findMany({
-    where: { tenantId, type: "rent", status: "overdue" },
+    where: { tenantId, type: "rent", status: "overdue", property: { ownerId: appUser.id } },
     select: { amount: true },
   });
 

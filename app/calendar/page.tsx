@@ -1,12 +1,22 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { CalendarClient, type CalendarEventRow, type PropertyOption } from './CalendarClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CalendarPage() {
+  const appUser = await requireAppUser()
   const [events, properties] = await Promise.all([
     prisma.calendarEvent.findMany({
+      where: {
+        OR: [
+          { ownerId: appUser.id },
+          { property: { ownerId: appUser.id } },
+          { tenant: { property: { ownerId: appUser.id } } },
+          { job: { property: { ownerId: appUser.id } } },
+        ],
+      },
       orderBy: { start: 'asc' },
       include: {
         property: { select: { id: true, address: true } },
@@ -14,6 +24,7 @@ export default async function CalendarPage() {
       },
     }),
     prisma.property.findMany({
+      where: { ownerId: appUser.id },
       orderBy: { address: 'asc' },
       select: { id: true, address: true },
     }),

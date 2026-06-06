@@ -122,9 +122,24 @@ model Landlord {
   preferences         LandlordPreferences?
 }
 
+model AppUser {
+  id        Int      @id @default(autoincrement())
+  clerkId   String   @unique
+  email     String
+  name      String?
+  createdAt DateTime @default(now())
+
+  properties     Property[]
+  vendors        Vendor[]
+  calendarEvents CalendarEvent[]
+
+  @@index([email])
+}
+
 model Property {
   id              Int             @id @default(autoincrement())
   landlordId      Int
+  ownerId         Int
   address         String
   city            String
   propertyType    PropertyType    @default(apartment)
@@ -137,6 +152,7 @@ model Property {
   managerName     String?
   notes           String?
 
+  owner            AppUser         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   landlord         Landlord        @relation(fields: [landlordId], references: [id], onDelete: Cascade)
   tenants          Tenant[]
   jobs             Job[]
@@ -146,6 +162,7 @@ model Property {
   healthSnapshots  PropertyHealthSnapshot[]
 
   @@index([landlordId])
+  @@index([ownerId])
 }
 
 model Tenant {
@@ -255,6 +272,7 @@ model JobAttachment {
 
 model Vendor {
   id           Int            @id @default(autoincrement())
+  ownerId      Int
   name         String
   phone        String
   email        String?
@@ -266,6 +284,10 @@ model Vendor {
   rating       Decimal?       @db.Decimal(3, 1)
   activeJobs   Int            @default(0)
   completedJobs Int           @default(0)
+
+  owner        AppUser         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
 }
 
 model Document {
@@ -324,6 +346,7 @@ model Payment {
 
 model CalendarEvent {
   id         Int               @id @default(autoincrement())
+  ownerId    Int?
   title      String
   eventType  CalendarEventType
   propertyId Int?
@@ -334,10 +357,12 @@ model CalendarEvent {
   status     String?
   notes      String?
 
+  owner    AppUser?  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   job      Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
+  @@index([ownerId])
   @@index([propertyId])
   @@index([tenantId])
   @@index([start])

@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  assertOwnedTenant,
+  notFoundResponse,
+  requireAppUserForApi,
+  unauthorized,
+} from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/payments — record a payment for a tenant.
-// If there's an existing overdue payment for that tenant+type, mark it paid.
-// Otherwise create a new paid payment on the tenant's current property.
+// POST /api/payments - record a payment for an owned tenant.
 export async function POST(req: Request) {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const body = await req.json();
     const { tenantId, amount, type, paidDate, notes } = body;
 
@@ -16,12 +23,14 @@ export async function POST(req: Request) {
     }
 
     const tid = parseInt(tenantId, 10);
+    const ownedTenant = await assertOwnedTenant(tid, appUser.id);
+    if (!ownedTenant) return notFoundResponse();
+
     const paymentType = type ?? "rent";
     const paid = paidDate ? new Date(paidDate) : new Date();
 
-    // Find the most recent overdue payment for this tenant + type
     const overduePayment = await prisma.payment.findFirst({
-      where: { tenantId: tid, type: paymentType, status: "overdue" },
+      where: { tenantId: tid, type: paymentType, status: "overdue", property: { ownerId: appUser.id } },
       orderBy: { dueDate: "desc" },
     });
 
@@ -38,18 +47,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ id: updated.id }, { status: 200 });
     }
 
-    // No overdue to update — create a fresh paid payment
     if (!amount) {
       return NextResponse.json({ error: "amount is required when no overdue payment exists" }, { status: 400 });
     }
-    const tenant = await prisma.tenant.findUnique({ where: { id: tid }, select: { propertyId: true } });
-    if (!tenant?.propertyId) {
+    if (!ownedTenant.propertyId) {
       return NextResponse.json({ error: "Tenant has no property assigned" }, { status: 400 });
     }
 
     const payment = await prisma.payment.create({
       data: {
-        propertyId: tenant.propertyId,
+        propertyId: ownedTenant.propertyId,
         tenantId: tid,
         amount: parseFloat(amount),
         type: paymentType,
@@ -65,10 +72,14 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/payments — all payments with tenant and property context.
+// GET /api/payments - all payments with tenant and property context for the owner.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const payments = await prisma.payment.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: [{ dueDate: "desc" }],
       include: {
         tenant: { select: { name: true } },

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jerusalemTodayUTCDate } from "@/lib/dates";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
+import { requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const { id } = await params;
   const paymentId = parseInt(id, 10);
   if (!Number.isFinite(paymentId)) {
@@ -29,6 +33,12 @@ export async function PATCH(
   }
 
   try {
+    const existing = await prisma.payment.findFirst({
+      where: { id: paymentId, property: { ownerId: appUser.id } },
+      select: { id: true },
+    });
+    if (!existing) return jsonWithCors(req, { error: "payment not found" }, { status: 404 });
+
     const updated = await prisma.payment.update({
       where: { id: paymentId },
       data: {

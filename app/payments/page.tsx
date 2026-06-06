@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { PaymentsClient, type PaymentRow, type TenantRow } from './PaymentsClient'
 import { AddPaymentButton } from './AddPaymentButton'
@@ -6,8 +7,10 @@ import { AddPaymentButton } from './AddPaymentButton'
 export const dynamic = 'force-dynamic'
 
 export default async function PaymentsPage() {
+  const appUser = await requireAppUser()
   const [payments, occupiedProps, tenants] = await Promise.all([
     prisma.payment.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: [{ dueDate: 'desc' }],
       include: {
         property: { select: { address: true, city: true } },
@@ -15,10 +18,11 @@ export default async function PaymentsPage() {
       },
     }),
     prisma.property.findMany({
-      where: { occupancyStatus: 'occupied' },
+      where: { ownerId: appUser.id, occupancyStatus: 'occupied' },
       select: { monthlyRent: true },
     }),
     prisma.tenant.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: { name: 'asc' },
       include: {
         property: { select: { address: true, city: true } },

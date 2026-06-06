@@ -20,9 +20,9 @@ export type PropertySummaryRow = {
   overdue_payment_count: number;
 };
 
-export async function getPropertySummaries(): Promise<PropertySummaryRow[]> {
+export async function getPropertySummaries(ownerId: number): Promise<PropertySummaryRow[]> {
   const rows = await prisma.$queryRaw<PropertySummaryRow[]>`
-    SELECT * FROM vw_property_summary ORDER BY address
+    SELECT * FROM vw_property_summary WHERE "ownerId" = ${ownerId} ORDER BY address
   `;
   return rows.map((r) => ({
     ...r,
@@ -58,9 +58,12 @@ export type TenantSummaryRow = {
   thread_urgency: string | null;
 };
 
-export async function getTenantSummaries(): Promise<TenantSummaryRow[]> {
+export async function getTenantSummaries(ownerId: number): Promise<TenantSummaryRow[]> {
   const rows = await prisma.$queryRaw<TenantSummaryRow[]>`
-    SELECT * FROM vw_tenant_summary ORDER BY name
+    SELECT *
+    FROM vw_tenant_summary
+    WHERE "propertyId" IN (SELECT id FROM "Property" WHERE "ownerId" = ${ownerId})
+    ORDER BY name
   `;
   return rows.map((r) => ({
     ...r,
@@ -88,9 +91,9 @@ export type JobSummaryRow = {
   createdAt: Date;
 };
 
-export async function getJobSummaries(): Promise<JobSummaryRow[]> {
+export async function getJobSummaries(ownerId: number): Promise<JobSummaryRow[]> {
   const rows = await prisma.$queryRaw<JobSummaryRow[]>`
-    SELECT * FROM vw_job_summary ORDER BY status, "createdAt" DESC
+    SELECT * FROM vw_job_summary WHERE "ownerId" = ${ownerId} ORDER BY status, "createdAt" DESC
   `;
   return rows;
 }

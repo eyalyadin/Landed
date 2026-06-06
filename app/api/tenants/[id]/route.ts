@@ -1,26 +1,36 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  assertOwnedProperty,
+  assertOwnedTenant,
+  notFoundResponse,
+  requireAppUserForApi,
+  unauthorized,
+} from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// PATCH /api/tenants/[id] — update tenant fields and/or assign to a property.
-// Body: { name?, phone?, email?, moveInDate?, leaseEndDate?, notes?, propertyId? }
-// NOTE: never call prisma.messageThread.create() — DB trigger trg_create_tenant_thread handles it.
+// PATCH /api/tenants/[id] - update an owned tenant and/or assign to an owned property.
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const { id } = await params;
     const tenantId = parseInt(id, 10);
     if (!Number.isFinite(tenantId)) {
       return NextResponse.json({ error: "invalid id" }, { status: 400 });
     }
 
+    const ownedTenant = await assertOwnedTenant(tenantId, appUser.id);
+    if (!ownedTenant) return notFoundResponse();
+
     const body = await req.json().catch(() => ({}));
     const { name, phone, email, moveInDate, leaseEndDate, notes, propertyId } = body;
 
-    // Build update object — only include fields present in the request body
     const data: {
       name?: string;
       phone?: string | null;
@@ -29,6 +39,7 @@ export async function PATCH(
       leaseEndDate?: Date | null;
       notes?: string | null;
       propertyId?: number | null;
+      landlordId?: number;
     } = {};
 
     if (name !== undefined) data.name = String(name).trim();
@@ -38,7 +49,15 @@ export async function PATCH(
     if (leaseEndDate !== undefined) data.leaseEndDate = leaseEndDate ? new Date(leaseEndDate) : null;
     if (notes !== undefined) data.notes = notes ? String(notes).trim() : null;
     if (propertyId !== undefined) {
-      data.propertyId = propertyId ? parseInt(String(propertyId), 10) : null;
+      const nextPropertyId = propertyId ? parseInt(String(propertyId), 10) : null;
+      if (nextPropertyId === null || !Number.isFinite(nextPropertyId)) {
+        data.propertyId = null;
+      } else {
+        const ownedProperty = await assertOwnedProperty(nextPropertyId, appUser.id);
+        if (!ownedProperty) return notFoundResponse();
+        data.propertyId = ownedProperty.id;
+        data.landlordId = ownedProperty.landlordId;
+      }
     }
 
     const updatedTenant = await prisma.tenant.update({
@@ -46,7 +65,6 @@ export async function PATCH(
       data,
     });
 
-    // If assigning to a property, mark that property as occupied
     if (data.propertyId && Number.isFinite(data.propertyId)) {
       await prisma.property.update({
         where: { id: data.propertyId },

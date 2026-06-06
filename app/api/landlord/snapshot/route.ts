@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,16 @@ export async function OPTIONS(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const [landlords, tenants] = await Promise.all([
-    prisma.landlord.findMany({ orderBy: { id: "asc" } }),
+    prisma.landlord.findMany({
+      where: { properties: { some: { ownerId: appUser.id } } },
+      orderBy: { id: "asc" },
+    }),
     prisma.tenant.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: { createdAt: "asc" },
       include: {
         property: true,

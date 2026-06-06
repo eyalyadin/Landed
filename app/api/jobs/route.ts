@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  assertOwnedProperty,
+  notFoundResponse,
+  requireAppUserForApi,
+  unauthorized,
+} from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// POST /api/jobs — create a new task/repair job.
+// POST /api/jobs - create a new task/repair job on an owned property.
 export async function POST(req: Request) {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const body = await req.json();
     const { title, category, propertyId, status, dueDate, notes } = body;
 
@@ -13,9 +22,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "title and propertyId are required" }, { status: 400 });
     }
 
+    const ownedProperty = await assertOwnedProperty(parseInt(propertyId, 10), appUser.id);
+    if (!ownedProperty) return notFoundResponse();
+
     const job = await prisma.job.create({
       data: {
-        propertyId: parseInt(propertyId, 10),
+        propertyId: ownedProperty.id,
         title,
         category: category ?? "repair",
         status: status ?? "new",
@@ -29,10 +41,14 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/jobs — all jobs with property and tenant context.
+// GET /api/jobs - all jobs with property and tenant context for the owner.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const jobs = await prisma.job.findMany({
+      where: { property: { ownerId: appUser.id } },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
       include: {
         property: { select: { address: true, unitLabel: true, city: true } },

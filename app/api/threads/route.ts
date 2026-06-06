@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAppUserForApi, unauthorized } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/threads — all message threads with last message preview and linking info.
+// GET /api/threads - owned message threads with last message preview and linking info.
 export async function GET() {
   try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
     const threads = await prisma.messageThread.findMany({
+      where: { tenant: { property: { ownerId: appUser.id } } },
       orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
       include: {
         tenant: {

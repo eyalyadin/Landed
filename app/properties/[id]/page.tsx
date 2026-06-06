@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireAppUser } from "@/lib/current-user";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,9 +94,10 @@ export default async function PropertyDetailPage({
   const { id } = await params;
   const propertyId = parseInt(id, 10);
   if (!Number.isFinite(propertyId)) notFound();
+  const appUser = await requireAppUser();
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
+  const property = await prisma.property.findFirst({
+    where: { id: propertyId, ownerId: appUser.id },
     include: {
       tenants: {
         orderBy: { createdAt: "desc" },
@@ -121,9 +123,12 @@ export default async function PropertyDetailPage({
   // Run document file check and health scoring in parallel.
   const [docsWithFile, health] = await Promise.all([
     prisma.$queryRaw<{ id: number }[]>`
-      SELECT id FROM "Document" WHERE "propertyId" = ${propertyId} AND "fileData" IS NOT NULL
+      SELECT d.id
+      FROM "Document" d
+      JOIN "Property" p ON p.id = d."propertyId"
+      WHERE d."propertyId" = ${propertyId} AND d."fileData" IS NOT NULL AND p."ownerId" = ${appUser.id}
     `,
-    computeAndSavePropertyHealth(propertyId),
+    computeAndSavePropertyHealth(propertyId, appUser.id),
   ]);
   const fileIdSet = new Set(docsWithFile.map((r: { id: number }) => r.id));
 

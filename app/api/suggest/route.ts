@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { suggestReply } from "@/lib/gemini";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
+import { assertOwnedTenant, requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ export async function OPTIONS(req: NextRequest) {
 // feedbackId is the SuggestionFeedback row created with action="dismissed".
 // The send endpoint will update it to "accepted" or "edited" when the message is sent.
 export async function POST(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const payload = (await req.json().catch(() => null)) as { tenantId?: number | string } | null;
   const rawId = payload?.tenantId;
   const tenantId = rawId !== undefined ? Number(rawId) : NaN;
@@ -22,13 +26,16 @@ export async function POST(req: NextRequest) {
     return jsonWithCors(req, { error: "tenantId is required" }, { status: 400 });
   }
 
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-    include: { thread: true },
-  });
-  if (!tenant) {
+  const ownedTenant = await assertOwnedTenant(tenantId, appUser.id);
+  if (!ownedTenant) {
     return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }
+
+  const tenant = await prisma.tenant.findFirst({
+    where: { id: tenantId, property: { ownerId: appUser.id } },
+    include: { thread: true },
+  });
+  if (!tenant) return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   if (!tenant.thread) {
     return jsonWithCors(req, { error: "tenant has no message thread" }, { status: 409 });
   }

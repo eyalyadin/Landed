@@ -31,8 +31,12 @@ Railway. Do not proceed past a step that needs a value you don't have.
 | `TELEGRAM_BOT_USERNAME` | BotFather | used to build invite links |
 | `TELEGRAM_WEBHOOK_SECRET` | you generate (random string) | verify inbound webhook |
 | `GEMINI_API_KEY` | Google AI Studio | server-side only |
-| `LANDLORD_PASSWORD` | human chooses | single-landlord login |
-| `SESSION_SECRET` | you generate (random) | signs the login cookie |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk | browser-safe Clerk key |
+| `CLERK_SECRET_KEY` | Clerk | server-side Clerk key |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL` | `/login` | Clerk sign-in route |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL` | `/signup` | Clerk sign-up route |
+| `NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL` | `/properties` | post-login destination |
+| `NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL` | `/properties` | post-signup destination |
 | `CRON_SECRET` | you generate (random) | protects the cron endpoint |
 | `PUBLIC_URL` | Railway domain | known only after first deploy |
 
@@ -45,8 +49,8 @@ Railway. Do not proceed past a step that needs a value you don't have.
 - **Telegram Bot API called directly with `fetch`** — do NOT add a Telegram library.
 - **Google GenAI SDK** (`@google/genai`, class `GoogleGenAI`) — model `gemini-3.5-flash`.
   Do NOT use the deprecated `@google/generative-ai` package.
-- **Auth:** single landlord only. Password from `LANDLORD_PASSWORD`, stored in a
-  signed httpOnly cookie. Keep it minimal — tenants never log into the web app.
+- **Auth:** Clerk-backed multi-user auth. Use Clerk for sign-up, sign-in, sign-out,
+  and session management; do not build custom password auth.
 - **Cron:** a Railway cron service that calls a protected endpoint daily.
 
 ---

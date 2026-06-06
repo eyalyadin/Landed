@@ -92,6 +92,12 @@ async function main() {
     console.log(`  Removed existing demo property (id=${existingProp.id})`);
   }
 
+  const owner = await prisma.appUser.upsert({
+    where: { clerkId: "demo-owner" },
+    update: {},
+    create: { clerkId: "demo-owner", email: "demo@landed.local", name: "Demo Owner" },
+  });
+
   // ── 2. Ensure landlord exists (use id=1 from the main seed) ──────────────
   let landlord = await prisma.landlord.findUnique({ where: { id: 1 } });
   if (!landlord) {
@@ -103,6 +109,7 @@ async function main() {
   const property = await prisma.property.create({
     data: {
       landlordId:      landlord.id,
+      ownerId:         owner.id,
       address:         DEMO_ADDRESS,
       city:            "תל אביב",
       propertyType:    "apartment",

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { requireAppUser } from '@/lib/current-user'
 import { AppShell } from '@/components/app-shell'
 import { PropertiesClient, type PropertyItem } from './PropertiesClient'
 import { AddPropertyButton } from './AddPropertyButton'
@@ -6,7 +7,9 @@ import { AddPropertyButton } from './AddPropertyButton'
 export const dynamic = 'force-dynamic'
 
 export default async function PropertiesPage() {
+  const appUser = await requireAppUser()
   const properties = await prisma.property.findMany({
+    where: { ownerId: appUser.id },
     orderBy: { address: 'asc' },
     include: {
       tenants: {

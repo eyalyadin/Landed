@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseISODateUTC, generateDueDates } from "@/lib/dates";
 import { corsPreflight, jsonWithCors } from "@/lib/cors";
+import { assertOwnedTenant, requireAppUserForApi } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export async function OPTIONS(req: NextRequest) {
 // POST /api/rent/schedules { tenantId, amount, dueDayOfMonth, startDate }
 // Creates a recurring schedule and generates 12 monthly pending payments.
 export async function POST(req: NextRequest) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return jsonWithCors(req, { error: "unauthorized" }, { status: 401 });
+
   const payload = (await req.json().catch(() => null)) as {
     tenantId?: number | string;
     amount?: number | string;
@@ -38,7 +42,7 @@ export async function POST(req: NextRequest) {
     return jsonWithCors(req, { error: "startDate must be YYYY-MM-DD" }, { status: 400 });
   }
 
-  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  const tenant = await assertOwnedTenant(tenantId, appUser.id);
   if (!tenant) {
     return jsonWithCors(req, { error: "tenant not found" }, { status: 404 });
   }

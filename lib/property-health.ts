@@ -202,28 +202,33 @@ function snapshotAgeLabel(createdAt: Date): string {
 
 export async function computeAndSavePropertyHealth(
   propertyId: number,
+  ownerId: number,
 ): Promise<PropertyHealthData> {
   const now = new Date();
 
   // Fetch live data in parallel.
   const [jobs, rentPayments, property, previousSnapshot] = await Promise.all([
     prisma.job.findMany({
-      where: { propertyId },
+      where: { propertyId, property: { ownerId } },
       select: { status: true, category: true, priority: true, createdAt: true },
     }),
     prisma.payment.findMany({
-      where: { propertyId, type: "rent" },
+      where: { propertyId, type: "rent", property: { ownerId } },
       select: { status: true },
     }),
-    prisma.property.findUnique({
-      where: { id: propertyId },
+    prisma.property.findFirst({
+      where: { id: propertyId, ownerId },
       select: { occupancyStatus: true },
     }),
     prisma.propertyHealthSnapshot.findFirst({
-      where: { propertyId },
+      where: { propertyId, property: { ownerId } },
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  if (!property) {
+    throw new Error("Property not found");
+  }
 
   const occupancyStatus = property?.occupancyStatus ?? "vacant";
   const { score, riskLevel, metrics, reasons, recommendation } = scoreFromData(
