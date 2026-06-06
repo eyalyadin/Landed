@@ -17,10 +17,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,11 +29,18 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
+type Summary = {
+  unreadCount: number
+  openTaskCount: number
+  overdueCount: number
+  landlordName: string
+}
+
 const navigation = [
   { name: 'Properties', href: '/properties', icon: Building2 },
   { name: 'Payments', href: '/payments', icon: CreditCard },
-  { name: 'Messages', href: '/messages', icon: MessageSquare, badge: 3 },
-  { name: 'Tasks & Repairs', href: '/tasks', icon: Wrench, badge: 2 },
+  { name: 'Messages', href: '/messages', icon: MessageSquare, countKey: 'unreadCount' as keyof Summary },
+  { name: 'Tasks & Repairs', href: '/tasks', icon: Wrench, countKey: 'openTaskCount' as keyof Summary },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Contracts', href: '/contracts', icon: FileText },
   { name: 'Tenants', href: '/tenants', icon: Users },
@@ -51,7 +57,13 @@ interface AppShellProps {
   pageAction?: React.ReactNode
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({
+  onNavigate,
+  summary,
+}: {
+  onNavigate?: () => void
+  summary: Summary | null
+}) {
   const pathname = usePathname()
 
   return (
@@ -68,6 +80,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+          const count = item.countKey && summary ? (summary[item.countKey] as number) : 0
+
           return (
             <Link
               key={item.name}
@@ -82,9 +96,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             >
               <item.icon className="h-4 w-4 shrink-0" />
               <span className="flex-1">{item.name}</span>
-              {item.badge && (
+              {count > 0 && (
                 <span className="h-4.5 min-w-[18px] px-1 text-[11px] font-medium bg-muted text-muted-foreground rounded flex items-center justify-center">
-                  {item.badge}
+                  {count}
                 </span>
               )}
             </Link>
@@ -120,12 +134,32 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [summary, setSummary] = useState<Summary | null>(null)
+
+  useEffect(() => {
+    fetch('/api/summary')
+      .then(r => r.json())
+      .then((data: Summary) => setSummary(data))
+      .catch(() => {}) // non-critical: chrome stays badge-free on failure
+  }, [])
+
+  const initials = summary?.landlordName
+    ? summary.landlordName
+        .split(' ')
+        .filter(Boolean)
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : 'L'
+
+  const overdueCount = summary?.overdueCount ?? 0
 
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:w-56 lg:flex-col lg:fixed lg:inset-y-0 bg-card border-r border-border">
-        <SidebarContent />
+        <SidebarContent summary={summary} />
       </aside>
 
       {/* Main Content */}
@@ -141,7 +175,10 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-56 p-0">
-              <SidebarContent onNavigate={() => setMobileMenuOpen(false)} />
+              <SidebarContent
+                summary={summary}
+                onNavigate={() => setMobileMenuOpen(false)}
+              />
             </SheetContent>
           </Sheet>
 
@@ -174,9 +211,11 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative h-8 w-8">
             <Bell className="h-4 w-4" />
-            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center font-medium">
-              2
-            </span>
+            {overdueCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center font-medium">
+                {overdueCount}
+              </span>
+            )}
             <span className="sr-only">Notifications</span>
           </Button>
 
@@ -186,7 +225,7 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-foreground text-background text-xs font-medium">
-                    JD
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
               </Button>
