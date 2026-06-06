@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { TaskDetailSheet } from "./TaskDetailSheet";
 
 export type TaskItem = {
   id: number;
@@ -9,7 +10,12 @@ export type TaskItem = {
   description: string | null;
   category: string;
   status: string;
+  priority: string;
   dueDate: string | null;
+  contractorName: string | null;
+  notes: string | null;
+  createdAt: string;
+  attachments: { id: number; telegramFileId: string; caption: string | null }[];
 };
 
 type TaskTransition = {
@@ -49,9 +55,11 @@ const COLUMN_HEADER: Record<string, string> = {
 export function TasksBoard({
   propertyId,
   jobs,
+  tenant,
 }: {
   propertyId: number;
   jobs: TaskItem[];
+  tenant: { id: number; name: string; telegramLinked: boolean } | null;
 }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>(jobs);
@@ -59,6 +67,9 @@ export function TasksBoard({
   const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
   const [dragId, setDragId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const didDragRef = useRef(false);
   const today = new Date();
 
   // Non-blocking: fetch AI task-move suggestions after mount
@@ -105,6 +116,7 @@ export function TasksBoard({
   }
 
   return (
+    <div>
     <div className="flex gap-3 overflow-x-auto pb-2">
       {COLUMNS.map((col) => {
         const colTasks = tasks.filter((t) => t.status === col.status);
@@ -163,8 +175,13 @@ export function TasksBoard({
                     <div
                       key={task.id}
                       draggable
-                      onDragStart={() => setDragId(task.id)}
-                      onDragEnd={() => setDragId(null)}
+                      onDragStart={() => { setDragId(task.id); didDragRef.current = true; }}
+                      onDragEnd={() => { setDragId(null); }}
+                      onClick={() => {
+                        if (didDragRef.current) { didDragRef.current = false; return; }
+                        setSelectedTask(task);
+                        setSheetOpen(true);
+                      }}
                       className={[
                         "rounded-md border bg-card p-2.5 cursor-grab active:cursor-grabbing transition-opacity select-none",
                         dragId === task.id ? "opacity-40" : "",
@@ -206,13 +223,22 @@ export function TasksBoard({
                         </div>
                       )}
 
-                      {/* Title */}
-                      <p
-                        dir="auto"
-                        className="text-[13px] font-medium leading-tight text-foreground"
-                      >
-                        {task.title}
-                      </p>
+                      {/* Title + priority dot */}
+                      <div className="flex items-start gap-1.5">
+                        <span
+                          className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                            task.priority === "urgent" ? "bg-red-500" :
+                            task.priority === "high" ? "bg-amber-500" :
+                            task.priority === "medium" ? "bg-blue-400" : "bg-zinc-300"
+                          }`}
+                        />
+                        <p
+                          dir="auto"
+                          className="text-[13px] font-medium leading-tight text-foreground"
+                        >
+                          {task.title}
+                        </p>
+                      </div>
 
                       {/* Description */}
                       {task.description && (
@@ -229,6 +255,11 @@ export function TasksBoard({
                         <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                           {CATEGORY_LABELS[task.category] ?? task.category}
                         </span>
+                        {task.contractorName && (
+                          <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                            👷 {task.contractorName}
+                          </span>
+                        )}
                         {task.dueDate && (
                           <span
                             className={`text-[11px] tabular-nums ${
@@ -260,6 +291,17 @@ export function TasksBoard({
           </div>
         );
       })}
+    </div>
+    <TaskDetailSheet
+      task={selectedTask}
+      propertyId={propertyId}
+      tenant={tenant}
+      open={sheetOpen}
+      onOpenChange={(o) => {
+        setSheetOpen(o);
+        if (!o) setSelectedTask(null);
+      }}
+    />
     </div>
   );
 }

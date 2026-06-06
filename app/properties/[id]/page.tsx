@@ -173,8 +173,25 @@ export default async function PropertyDetailPage({
     description: j.description,
     category: j.category as string,
     status: j.status as string,
+    priority: j.priority as string,
     dueDate: j.dueDate?.toISOString() ?? null,
+    contractorName: j.contractorName,
+    notes: j.notes,
+    createdAt: j.createdAt.toISOString(),
+    attachments: j.attachments.map((a) => ({
+      id: a.id,
+      telegramFileId: a.telegramFileId,
+      caption: a.caption,
+    })),
   }));
+
+  const tenantProp = tenant
+    ? {
+        id: tenant.id,
+        name: tenant.name,
+        telegramLinked: !!tenant.telegramChatId,
+      }
+    : null;
 
   return (
     <AppShell pageTitle={property.address}>
@@ -343,7 +360,7 @@ export default async function PropertyDetailPage({
             </div>
           </CardHeader>
           <CardContent className="p-4">
-            <TasksBoard propertyId={property.id} jobs={serializedJobs} />
+            <TasksBoard propertyId={property.id} jobs={serializedJobs} tenant={tenantProp} />
           </CardContent>
         </Card>
 

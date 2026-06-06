@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendMessage } from "@/lib/telegram";
 import { detectLanguage } from "@/lib/lang";
+import { enrichRepairRequest, type SuggestMessage } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -82,12 +83,46 @@ export async function POST(req: NextRequest) {
       const caption = msg.caption?.trim();
       const propertyId = tenant.propertyId;
       if (propertyId) {
+        // Try AI enrichment from caption + recent chat context.
+        let jobTitle: string = caption || "Maintenance request";
+        let jobDescription: string | undefined;
+        let jobCategory: string = "repair";
+        let jobPriority: string = "medium";
+
+        try {
+          // Load last 8 messages for context (oldest→newest).
+          const recentMsgs = tenant.thread
+            ? await prisma.message.findMany({
+                where: { threadId: tenant.thread.id, isInternalNote: false },
+                orderBy: { createdAt: "desc" },
+                take: 8,
+                select: { direction: true, body: true },
+              })
+            : [];
+
+          const context: SuggestMessage[] = recentMsgs
+            .reverse()
+            .map((m) => ({ direction: m.direction as "inbound" | "outbound", body: m.body }));
+
+          const enrichment = await enrichRepairRequest(caption ?? null, context);
+          if (enrichment) {
+            jobTitle = enrichment.title;
+            jobDescription = enrichment.description || undefined;
+            jobCategory = enrichment.category;
+            jobPriority = enrichment.priority;
+          }
+        } catch {
+          // Fallback: use bare values already set above.
+        }
+
         await prisma.job.create({
           data: {
             propertyId,
             tenantId: tenant.id,
-            title: caption || "Maintenance request",
-            category: "repair",
+            title: jobTitle,
+            description: jobDescription,
+            category: jobCategory as "repair" | "payment_followup" | "contract_renewal" | "tenant_issue" | "inspection" | "maintenance",
+            priority: jobPriority as "low" | "medium" | "high" | "urgent",
             status: "new",
             attachments: {
               create: {
