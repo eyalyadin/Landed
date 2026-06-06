@@ -13,6 +13,7 @@ import { AddTaskButton } from "./AddTaskButton";
 import { AddPaymentButton } from "./AddPaymentButton";
 import { AddContractButton } from "./AddContractButton";
 import { TenantButton } from "./TenantButton";
+import { PropertyHealthCard } from "./PropertyHealthCard";
 import {
   Building2,
   Home,
@@ -353,6 +354,23 @@ export default async function PropertyDetailPage({
                     )}
                   </div>
                 </div>
+
+                {/* Property Health — below address */}
+                <PropertyHealthCard
+                  jobs={serializedJobs.map((j) => ({
+                    status: j.status,
+                    category: j.category,
+                    priority: j.priority,
+                    createdAt: j.createdAt,
+                    title: j.title,
+                  }))}
+                  payments={invoices.map((i) => ({
+                    status: i.status,
+                    amount: i.amount,
+                    dueDate: i.dueDate,
+                  }))}
+                  occupancyStatus={property.occupancyStatus}
+                />
               </div>
             </div>
           </CardContent>
