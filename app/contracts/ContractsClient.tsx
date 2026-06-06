@@ -47,6 +47,7 @@ export type ContractRow = {
   tenantName: string | null
   leaseEndDate: string | null   // ISO date string
   uploadedAt: string            // ISO date string
+  hasFile: boolean
 }
 
 export type PropertyOption = {
@@ -90,7 +91,11 @@ function ContractCard({ contract }: { contract: ContractRow }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem className="text-[13px]">
+              <DropdownMenuItem
+                className="text-[13px]"
+                disabled={!contract.hasFile}
+                onClick={() => contract.hasFile && window.open(`/api/documents/${contract.id}/file`, '_blank')}
+              >
                 <Download className="mr-2 h-3.5 w-3.5" />
                 Download
               </DropdownMenuItem>
@@ -249,7 +254,11 @@ export function ContractsClient({ contracts, properties }: Props) {
                       </TableCell>
                       <TableCell className="py-2.5 text-right">
                         <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7"
+                            disabled={!contract.hasFile}
+                            onClick={() => contract.hasFile && window.open(`/api/documents/${contract.id}/file`, '_blank')}
+                          >
                             <Download className="h-3.5 w-3.5" />
                             <span className="sr-only">Download</span>
                           </Button>

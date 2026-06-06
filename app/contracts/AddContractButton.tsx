@@ -33,6 +33,7 @@ export function AddContractButton() {
   const [documentName, setDocumentName] = useState('')
   const [documentType, setDocumentType] = useState('rental_contract')
   const [propertyId, setPropertyId] = useState('')
+  const [file, setFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -48,22 +49,19 @@ export function AddContractButton() {
 
   function reset() {
     setDocumentName(''); setDocumentType('rental_contract')
-    setPropertyId(''); setError(null); setSaving(false)
+    setPropertyId(''); setFile(null); setError(null); setSaving(false)
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError(null)
-    const res = await fetch('/api/documents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        documentName,
-        documentType,
-        propertyId: parseInt(propertyId, 10),
-      }),
-    })
+    const fd = new FormData()
+    fd.append('documentName', documentName)
+    fd.append('documentType', documentType)
+    fd.append('propertyId', propertyId)
+    if (file) fd.append('file', file)
+    const res = await fetch('/api/documents', { method: 'POST', body: fd })
     setSaving(false)
     if (res.ok) {
       setOpen(false)
@@ -129,6 +127,18 @@ export function AddContractButton() {
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              PDF File
+              <span className="text-muted-foreground font-normal ml-1 text-xs">— optional, stored in the database</span>
+            </label>
+            <Input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

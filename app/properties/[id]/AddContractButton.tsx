@@ -36,21 +36,24 @@ export function AddContractButton({ propertyId }: { propertyId: number }) {
   const [documentName, setDocumentName] = useState('')
   const [documentType, setDocumentType] = useState('rental_contract')
   const [uploadedAt, setUploadedAt] = useState(toDateInputValue(new Date()))
+  const [file, setFile] = useState<File | null>(null)
 
   function reset() {
     setDocumentName(''); setDocumentType('rental_contract')
-    setUploadedAt(toDateInputValue(new Date())); setError(null); setSaving(false)
+    setUploadedAt(toDateInputValue(new Date())); setFile(null); setError(null); setSaving(false)
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setError(null)
-    const res = await fetch('/api/documents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ documentName, documentType, propertyId, uploadedAt }),
-    })
+    const fd = new FormData()
+    fd.append('documentName', documentName)
+    fd.append('documentType', documentType)
+    fd.append('propertyId', String(propertyId))
+    fd.append('uploadedAt', uploadedAt)
+    if (file) fd.append('file', file)
+    const res = await fetch('/api/documents', { method: 'POST', body: fd })
     setSaving(false)
     if (res.ok) {
       setOpen(false)
@@ -103,10 +106,14 @@ export function AddContractButton({ propertyId }: { propertyId: number }) {
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              File
-              <span className="text-muted-foreground font-normal ml-1 text-xs">— file storage not yet configured, metadata is saved</span>
+              PDF File
+              <span className="text-muted-foreground font-normal ml-1 text-xs">— optional, stored in the database</span>
             </label>
-            <Input type="file" disabled className="opacity-50 cursor-not-allowed" />
+            <Input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

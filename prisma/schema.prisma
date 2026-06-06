@@ -268,7 +268,7 @@ model Document {
   propertyId   Int
   documentName String
   documentType DocumentType @default(rental_contract)
-  fileUrl      String?
+  fileData     Bytes?
   uploadedAt   DateTime     @db.Date
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)

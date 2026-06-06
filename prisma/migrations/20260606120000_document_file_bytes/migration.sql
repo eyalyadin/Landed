@@ -1,0 +1,13 @@
+-- Migration: replace fileUrl (TEXT URL) with fileData (BYTEA binary PDF storage)
+-- All existing rows have fileUrl = NULL, so no data is lost by dropping the column.
+
+ALTER TABLE "Document" DROP COLUMN "fileUrl";
+ALTER TABLE "Document" ADD COLUMN "fileData" BYTEA;
+
+-- Backfill all existing rows with an example PDF ("Landed - Example Contract Document")
+-- so the download button is immediately enabled for every pre-existing document.
+UPDATE "Document"
+SET "fileData" = decode(
+  'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAyMTkgPj4Kc3RyZWFtCkJUCi9GMSAxNCBUZgo3MiA3NTAgVGQKKExhbmRlZCAtIEV4YW1wbGUgQ29udHJhY3QgRG9jdW1lbnQpIFRqCjAgLTI0IFRkCihHZW5lcmF0ZWQgYXMgYSBwbGFjZWhvbGRlciBmb3IgdGhlIHJlbnRhbCBwcm9wZXJ0eSBtYW5hZ2VtZW50IHN5c3RlbS4pIFRqCjAgLTI0IFRkCihUaGlzIGRvY3VtZW50IGlzIHN0b3JlZCBhcyBiaW5hcnkgZGF0YSBpbiB0aGUgZGF0YWJhc2UuKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDUxMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjU4MQolJUVPRgo=',
+  'base64'
+);

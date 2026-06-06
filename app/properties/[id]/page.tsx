@@ -106,11 +106,20 @@ export default async function PropertyDetailPage({
         orderBy: { createdAt: "desc" },
         include: { attachments: { orderBy: { createdAt: "asc" } } },
       },
-      documents: { orderBy: { uploadedAt: "desc" } },
+      documents: {
+        orderBy: { uploadedAt: "desc" },
+        select: { id: true, documentName: true, documentType: true, uploadedAt: true },
+      },
     },
   });
 
   if (!property) notFound();
+
+  // Which documents have a stored PDF file (avoid loading bytes into the page render)
+  const docsWithFile = await prisma.$queryRaw<{ id: number }[]>`
+    SELECT id FROM "Document" WHERE "propertyId" = ${propertyId} AND "fileData" IS NOT NULL
+  `;
+  const fileIdSet = new Set(docsWithFile.map((r: { id: number }) => r.id));
 
   const tenant = property.tenants[0] ?? null;
 
@@ -498,9 +507,9 @@ export default async function PropertyDetailPage({
                       {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
                     </span>
                     <div className="flex justify-end">
-                      {doc.fileUrl ? (
+                      {fileIdSet.has(doc.id) ? (
                         <a
-                          href={doc.fileUrl}
+                          href={`/api/documents/${doc.id}/file`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

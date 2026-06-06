@@ -6,15 +6,18 @@ import { AddContractButton } from './AddContractButton'
 export const dynamic = 'force-dynamic'
 
 export default async function ContractsPage() {
-  const [documents, properties] = await Promise.all([
+  const [documents, properties, docsWithFile] = await Promise.all([
     prisma.document.findMany({
       orderBy: { uploadedAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        propertyId: true,
+        documentName: true,
+        documentType: true,
+        uploadedAt: true,
         property: {
           select: {
-            id: true,
             address: true,
-            unitLabel: true,
             tenants: {
               orderBy: { createdAt: 'desc' },
               take: 1,
@@ -28,7 +31,10 @@ export default async function ContractsPage() {
       orderBy: { address: 'asc' },
       select: { id: true, address: true },
     }),
+    prisma.$queryRaw<{ id: number }[]>`SELECT id FROM "Document" WHERE "fileData" IS NOT NULL`,
   ])
+
+  const fileIdSet = new Set(docsWithFile.map((r: { id: number }) => r.id))
 
   const serializedContracts: ContractRow[] = documents.map(d => {
     const tenant = d.property.tenants[0] ?? null
@@ -41,6 +47,7 @@ export default async function ContractsPage() {
       tenantName: tenant?.name ?? null,
       leaseEndDate: tenant?.leaseEndDate ? tenant.leaseEndDate.toISOString() : null,
       uploadedAt: d.uploadedAt.toISOString(),
+      hasFile: fileIdSet.has(d.id),
     }
   })
 
