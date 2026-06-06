@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { AppShell } from '@/components/app-shell'
 import { PropertyCard } from '@/components/property-card'
 import { Button } from '@/components/ui/button'
@@ -18,15 +17,9 @@ import {
   Building2,
   Plus,
   Search,
-  MessageSquare,
-  Calendar,
-  FileText,
-  Wrench,
-  LayoutDashboard,
   AlertCircle,
   CheckCircle,
-  Clock,
-  Home,
+  TrendingUp,
 } from 'lucide-react'
 import {
   sampleProperties,
@@ -39,14 +32,14 @@ export default function PropertiesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [paymentFilter, setPaymentFilter] = useState<string>('all')
 
-  // Calculate summary metrics
-  const totalProperties = sampleProperties.length
-  const occupiedCount = sampleProperties.filter(p => p.occupancyStatus === 'occupied').length
-  const vacantCount = sampleProperties.filter(p => p.occupancyStatus === 'vacant').length
-  const overdueCount = sampleProperties.filter(p => p.paymentStatus === 'overdue').length
-  const openRepairs = sampleProperties.reduce((sum, p) => sum + p.openRepairCount, 0)
-  const totalMonthlyRent = sampleProperties
+  const expectedMonthly = sampleProperties
     .filter(p => p.occupancyStatus === 'occupied')
+    .reduce((sum, p) => sum + p.monthlyRent, 0)
+  const collected = sampleProperties
+    .filter(p => p.paymentStatus === 'paid')
+    .reduce((sum, p) => sum + p.monthlyRent, 0)
+  const overdueAmount = sampleProperties
+    .filter(p => p.paymentStatus === 'overdue')
     .reduce((sum, p) => sum + p.monthlyRent, 0)
 
   // Filter properties
@@ -71,130 +64,49 @@ export default function PropertiesPage() {
       }
     >
       <div className="p-4 lg:p-5 space-y-5">
-        {/* Summary Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Summary Strip — 3 tiles */}
+        <div className="grid grid-cols-3 gap-3">
           <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{totalProperties}</p>
-                  <p className="text-xs text-muted-foreground">Properties</p>
+                  <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatCurrency(expectedMonthly)}</p>
+                  <p className="text-xs text-muted-foreground">Expected Monthly</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-success/10">
-                  <CheckCircle className="h-4 w-4 text-success" />
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 dark:bg-emerald-950/30">
+                  <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{occupiedCount}</p>
-                  <p className="text-xs text-muted-foreground">Occupied</p>
+                  <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatCurrency(collected)}</p>
+                  <p className="text-xs text-muted-foreground">Collected</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <Home className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{vacantCount}</p>
-                  <p className="text-xs text-muted-foreground">Vacant</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-destructive/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-destructive/10">
                   <AlertCircle className="h-4 w-4 text-destructive" />
                 </div>
                 <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{overdueCount}</p>
+                  <p className="text-lg font-semibold text-foreground leading-none mb-0.5">{formatCurrency(overdueAmount)}</p>
                   <p className="text-xs text-muted-foreground">Overdue</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <Wrench className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{openRepairs}</p>
-                  <p className="text-xs text-muted-foreground">Open Repairs</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-foreground leading-none mb-0.5">{formatCurrency(totalMonthlyRent)}</p>
-                  <p className="text-xs text-muted-foreground">Monthly Rent</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Links - Fixed layout */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <Link
-            href="/messages"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors whitespace-nowrap"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Messages
-          </Link>
-          <Link
-            href="/calendar"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors whitespace-nowrap"
-          >
-            <Calendar className="h-3.5 w-3.5" />
-            Calendar
-          </Link>
-          <Link
-            href="/contracts"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors whitespace-nowrap"
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Contracts
-          </Link>
-          <Link
-            href="/tasks"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors whitespace-nowrap"
-          >
-            <Wrench className="h-3.5 w-3.5" />
-            Tasks & Repairs
-          </Link>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors whitespace-nowrap"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            Dashboard
-          </Link>
         </div>
 
         {/* Search and Filters */}

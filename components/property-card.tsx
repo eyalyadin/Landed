@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
 import {
@@ -17,12 +17,10 @@ import {
   Wrench,
   FileText,
   CreditCard,
-  Calendar,
   User,
-  AlertCircle,
 } from 'lucide-react'
 import type { Property, Tenant } from '@/lib/data'
-import { formatCurrency, formatDate } from '@/lib/data'
+import { formatCurrency } from '@/lib/data'
 
 interface PropertyCardProps {
   property: Property
@@ -43,51 +41,31 @@ function getPropertyTypeIcon(type: string) {
   }
 }
 
-function getPropertyTypeLabel(type: string) {
-  switch (type) {
-    case 'apartment':
-      return 'Apartment'
-    case 'house':
-      return 'House'
-    case 'condo':
-      return 'Condo'
-    case 'townhouse':
-      return 'Townhouse'
-    case 'commercial':
-      return 'Commercial'
-    default:
-      return type
-  }
-}
 
 export function PropertyCard({ property, tenant }: PropertyCardProps) {
   const PropertyIcon = getPropertyTypeIcon(property.propertyType)
-  const hasIssues = property.openTaskCount > 0 || property.openRepairCount > 0
   const isOverdue = property.paymentStatus === 'overdue'
 
   return (
     <Card className="group relative border-border shadow-none hover:shadow-sm transition-shadow">
-      <CardHeader className="p-3 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-2.5 min-w-0">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-              <PropertyIcon className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div className="min-w-0">
-              <Link
-                href={`/properties/${property.id}`}
-                className="text-[13px] font-medium text-foreground hover:underline line-clamp-1"
-              >
-                {property.address}
-              </Link>
-              <p className="text-xs text-muted-foreground">
-                {property.city} · {getPropertyTypeLabel(property.propertyType)}
-              </p>
-            </div>
-          </div>
+      {/* Large icon + address block */}
+      <div className="flex flex-col items-center px-4 pt-5 pb-3">
+        <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted mb-3">
+          <PropertyIcon className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <Link
+          href={`/properties/${property.id}`}
+          className="text-sm font-semibold text-foreground hover:underline text-center line-clamp-1 w-full"
+        >
+          {property.address}
+        </Link>
+        <p className="text-xs text-muted-foreground text-center mt-0.5">{property.city}</p>
+
+        {/* Actions menu — top-right corner */}
+        <div className="absolute top-2 right-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreHorizontal className="h-3.5 w-3.5" />
                 <span className="sr-only">Actions</span>
               </Button>
@@ -128,8 +106,9 @@ export function PropertyCard({ property, tenant }: PropertyCardProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </CardHeader>
-      <CardContent className="p-3 pt-0 space-y-2.5">
+      </div>
+
+      <CardContent className="px-4 pb-4 pt-0 space-y-2">
         {/* Tenant / Vacancy */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs">
@@ -145,53 +124,16 @@ export function PropertyCard({ property, tenant }: PropertyCardProps) {
 
         {/* Rent & Payment Status */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              {formatCurrency(property.monthlyRent)}
-              <span className="text-xs font-normal text-muted-foreground">/mo</span>
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-foreground">
+            {formatCurrency(property.monthlyRent)}
+            <span className="text-xs font-normal text-muted-foreground">/mo</span>
+          </p>
           {property.occupancyStatus === 'occupied' && (
             <StatusBadge status={property.paymentStatus} />
           )}
         </div>
-
-        {/* Key dates & issues */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          {property.nextPaymentDueDate && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>Due {formatDate(property.nextPaymentDueDate)}</span>
-            </div>
-          )}
-          {property.leaseEndDate && (
-            <div className="flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              <span>Lease ends {formatDate(property.leaseEndDate)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Issues indicator */}
-        {hasIssues && (
-          <div className="flex items-center gap-2.5 text-xs">
-            {property.openTaskCount > 0 && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Wrench className="h-3 w-3" />
-                <span>{property.openTaskCount} open task{property.openTaskCount > 1 ? 's' : ''}</span>
-              </div>
-            )}
-            {property.openRepairCount > 0 && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <AlertCircle className="h-3 w-3" />
-                <span>{property.openRepairCount} repair{property.openRepairCount > 1 ? 's' : ''}</span>
-              </div>
-            )}
-          </div>
-        )}
       </CardContent>
 
-      {/* Overdue indicator */}
       {isOverdue && (
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-destructive rounded-b-lg" />
       )}
