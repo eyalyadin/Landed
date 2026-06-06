@@ -1,7 +1,5 @@
 import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
 import { CalendarClient, type CalendarEventRow, type PropertyOption } from './CalendarClient'
 
 export const dynamic = 'force-dynamic'
@@ -41,12 +39,6 @@ export default async function CalendarPage() {
   return (
     <AppShell
       pageTitle="Calendar"
-      pageAction={
-        <Button size="sm" className="h-8 text-[13px]">
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Add Event
-        </Button>
-      }
     >
       <CalendarClient events={serializedEvents} properties={serializedProperties} />
     </AppShell>

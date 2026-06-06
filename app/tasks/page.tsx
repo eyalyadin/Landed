@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
 import { TasksClient, type TaskRow } from './TasksClient'
+import { AddTaskButton } from './AddTaskButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,12 +26,7 @@ export default async function TasksPage() {
   return (
     <AppShell
       pageTitle="Tasks & Repairs"
-      pageAction={
-        <Button size="sm" className="h-8 text-[13px]">
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Add Task
-        </Button>
-      }
+      pageAction={<AddTaskButton />}
     >
       <TasksClient tasks={serialized} />
     </AppShell>

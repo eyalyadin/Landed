@@ -12,21 +12,11 @@ import {
   HardHat,
   Settings,
   Menu,
-  Search,
-  Bell,
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 type Summary = {
@@ -140,20 +130,8 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
     fetch('/api/summary')
       .then(r => r.json())
       .then((data: Summary) => setSummary(data))
-      .catch(() => {}) // non-critical: chrome stays badge-free on failure
+      .catch(() => {})
   }, [])
-
-  const initials = summary?.landlordName
-    ? summary.landlordName
-        .split(' ')
-        .filter(Boolean)
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : 'L'
-
-  const overdueCount = summary?.overdueCount ?? 0
 
   return (
     <div className="flex h-screen bg-background">
@@ -184,57 +162,19 @@ export function AppShell({ children, pageTitle, pageAction }: AppShellProps) {
 
           {/* Page title */}
           {pageTitle && (
-            <h1 className="text-sm font-semibold text-foreground hidden sm:block">
+            <h1 className="text-sm font-semibold text-foreground">
               {pageTitle}
             </h1>
           )}
 
-          {/* Search */}
-          <div className="flex-1 max-w-sm ml-auto lg:ml-0">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search properties, tenants, contracts..."
-                className="h-8 pl-8 text-[13px] bg-background border-border"
-              />
-            </div>
-          </div>
+          <div className="flex-1" />
 
           {/* Page action */}
           {pageAction && (
-            <div className="hidden sm:block">
+            <div>
               {pageAction}
             </div>
           )}
-
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative h-8 w-8">
-            <Bell className="h-4 w-4" />
-            {overdueCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-destructive text-[10px] text-white flex items-center justify-center font-medium">
-                {overdueCount}
-              </span>
-            )}
-            <span className="sr-only">Notifications</span>
-          </Button>
-
-          {/* User menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-foreground text-background text-xs font-medium">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem className="text-[13px]">Profile</DropdownMenuItem>
-              <DropdownMenuItem className="text-[13px]">Account Settings</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </header>
 
         {/* Page Content */}

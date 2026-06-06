@@ -12,7 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Plus,
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
@@ -134,13 +133,9 @@ function ListView({ events, filter }: { events: CalendarEventRow[], filter: stri
         <CardContent className="flex flex-col items-center justify-center py-10">
           <CalendarIcon className="h-10 w-10 text-muted-foreground mb-3" />
           <h3 className="text-sm font-medium text-foreground mb-1">No events</h3>
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs text-muted-foreground">
             {filter !== 'all' ? 'Try adjusting your filters' : 'No upcoming events scheduled'}
           </p>
-          <Button size="sm" className="h-8 text-[13px]">
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Event
-          </Button>
         </CardContent>
       </Card>
     )

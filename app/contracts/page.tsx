@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
-import { Button } from '@/components/ui/button'
-import { Upload } from 'lucide-react'
 import { ContractsClient, type ContractRow, type PropertyOption } from './ContractsClient'
+import { AddContractButton } from './AddContractButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,12 +52,7 @@ export default async function ContractsPage() {
   return (
     <AppShell
       pageTitle="Contracts"
-      pageAction={
-        <Button size="sm" className="h-8 text-[13px]">
-          <Upload className="mr-1.5 h-3.5 w-3.5" />
-          Upload Contract
-        </Button>
-      }
+      pageAction={<AddContractButton />}
     >
       <ContractsClient contracts={serializedContracts} properties={serializedProperties} />
     </AppShell>

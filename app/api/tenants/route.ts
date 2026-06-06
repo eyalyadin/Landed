@@ -3,6 +3,29 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+// GET /api/tenants — list all tenants with their property address.
+export async function GET() {
+  try {
+    const tenants = await prisma.tenant.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        property: { select: { address: true } },
+      },
+    });
+    return NextResponse.json(
+      tenants.map((t) => ({
+        id: t.id,
+        name: t.name,
+        property_address: t.property?.address ?? null,
+      }))
+    );
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+}
+
 // POST /api/tenants { name, propertyId?, phone?, email? }
 // Creates a new tenant row and returns an invite link so they can link via Telegram /start.
 // NOTE: do NOT call prisma.messageThread.create() — the DB trigger

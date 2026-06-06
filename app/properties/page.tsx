@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
 import { PropertiesClient, type PropertyItem } from './PropertiesClient'
+import { AddPropertyButton } from './AddPropertyButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,12 +43,7 @@ export default async function PropertiesPage() {
   return (
     <AppShell
       pageTitle="Properties"
-      pageAction={
-        <Button size="sm" className="h-8 text-[13px]">
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Add Property
-        </Button>
-      }
+      pageAction={<AddPropertyButton />}
     >
       <PropertiesClient properties={serialized} />
     </AppShell>

@@ -17,14 +17,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -32,172 +24,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   Search,
-  Plus,
   Phone,
   Building2,
   MessageSquare,
   MoreHorizontal,
-  Copy,
-  Check,
-  Loader2,
-  ExternalLink,
 } from 'lucide-react'
 
-// ─── CopyButton ───────────────────────────────────────────────────────────────
-
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  function copy(e: React.MouseEvent) {
-    e.stopPropagation()
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-  return (
-    <button
-      onClick={copy}
-      title="Copy invite link"
-      className="text-muted-foreground hover:text-foreground transition-colors"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
-  )
-}
-
-// ─── AddTenantDialog ─────────────────────────────────────────────────────────
-
-function AddTenantDialog({ onCreated }: { onCreated: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
-
-  function reset() {
-    setName(''); setPhone(''); setEmail('')
-    setSaving(false); setError(null); setInviteLink(null)
-  }
-
-  async function create(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    setError(null)
-    const res = await fetch('/api/tenants', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone: phone || undefined, email: email || undefined }),
-    })
-    setSaving(false)
-    if (res.ok) {
-      const data = await res.json()
-      setInviteLink(data.inviteLink ?? null)
-      onCreated()
-    } else {
-      const data = await res.json().catch(() => ({}))
-      setError(data.error ?? 'Failed to create tenant')
-    }
-  }
-
-  function close() {
-    setOpen(false)
-    reset()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) { close() } else { setOpen(true) } }}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Tenant
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Tenant</DialogTitle>
-          <DialogDescription>
-            Enter the tenant&apos;s information. An invite link will be generated so they can link their Telegram account.
-          </DialogDescription>
-        </DialogHeader>
-
-        {inviteLink ? (
-          /* ─ Success: show invite link ─ */
-          <div className="space-y-4 py-4">
-            <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-4">
-              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300 mb-2">
-                Tenant created! Share this link with them:
-              </p>
-              <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
-                <a
-                  href={inviteLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:underline truncate flex-1 min-w-0"
-                >
-                  {inviteLink}
-                </a>
-                <CopyButton text={inviteLink} />
-                <a
-                  href={inviteLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              </div>
-              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-2">
-                When they open this link and press Start in Telegram, they&apos;ll be linked automatically.
-              </p>
-            </div>
-            <Button className="w-full" onClick={close}>Done</Button>
-          </div>
-        ) : (
-          /* ─ Form ─ */
-          <form onSubmit={create} className="grid gap-4 py-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Full Name *</label>
-              <Input
-                placeholder="e.g. David Cohen"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Phone</label>
-              <Input
-                placeholder="e.g. 050-1234567"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <Input
-                placeholder="e.g. tenant@example.com"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" disabled={saving} className="w-full">
-              {saving ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
-              ) : (
-                'Create Tenant & Get Invite Link'
-              )}
-            </Button>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 // ─── TenantsClient ────────────────────────────────────────────────────────────
 
@@ -229,12 +61,9 @@ export function TenantsClient({ tenants }: { tenants: TenantSummaryRow[] }) {
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Tenants</h1>
-          <p className="text-muted-foreground">Manage your tenant relationships</p>
-        </div>
-        <AddTenantDialog onCreated={() => router.refresh()} />
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">Tenants</h1>
+        <p className="text-muted-foreground">Manage your tenant relationships</p>
       </div>
 
       {/* Stats */}

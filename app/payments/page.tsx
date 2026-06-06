@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppShell } from '@/components/app-shell'
 import { PaymentsClient, type PaymentRow } from './PaymentsClient'
+import { AddPaymentButton } from './AddPaymentButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +36,7 @@ export default async function PaymentsPage() {
   }))
 
   return (
-    <AppShell pageTitle="Payments">
+    <AppShell pageTitle="Payments" pageAction={<AddPaymentButton />}>
       <PaymentsClient payments={serialized} expectedMonthly={expectedMonthly} />
     </AppShell>
   )
