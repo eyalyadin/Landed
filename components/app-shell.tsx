@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import {
   Building2,
-  LayoutDashboard,
+  CreditCard,
   MessageSquare,
   Wrench,
   Calendar,
@@ -32,7 +32,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 
 const navigation = [
   { name: 'Properties', href: '/properties', icon: Building2 },
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Messages', href: '/messages', icon: MessageSquare, badge: 3 },
   { name: 'Tasks & Repairs', href: '/tasks', icon: Wrench, badge: 2 },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
