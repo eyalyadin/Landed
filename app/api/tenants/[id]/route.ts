@@ -8,6 +8,31 @@ import {
   unauthorized,
 } from "@/lib/current-user";
 
+// DELETE /api/tenants/[id]
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const appUser = await requireAppUserForApi();
+    if (!appUser) return unauthorized();
+
+    const { id } = await params;
+    const tenantId = parseInt(id, 10);
+    if (!Number.isFinite(tenantId)) {
+      return NextResponse.json({ error: "invalid id" }, { status: 400 });
+    }
+
+    const ownedTenant = await assertOwnedTenant(tenantId, appUser.id);
+    if (!ownedTenant) return notFoundResponse();
+
+    await prisma.tenant.delete({ where: { id: tenantId } });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 // PATCH /api/tenants/[id] - update an owned tenant and/or assign to an owned property.

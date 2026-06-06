@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,6 +28,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Search,
   FileText,
   Building2,
@@ -35,6 +42,8 @@ import {
   Download,
   Trash2,
   Upload,
+  Pencil,
+  Loader2,
 } from 'lucide-react'
 import { formatDate } from '@/lib/data'
 
@@ -45,8 +54,8 @@ export type ContractRow = {
   propertyId: number | null
   propertyAddress: string | null
   tenantName: string | null
-  leaseEndDate: string | null   // ISO date string
-  uploadedAt: string            // ISO date string
+  leaseEndDate: string | null
+  uploadedAt: string
   hasFile: boolean
 }
 
@@ -55,7 +64,6 @@ export type PropertyOption = {
   address: string
 }
 
-// DB uses underscores
 function getDocumentTypeLabel(type: string): string {
   switch (type) {
     case 'rental_contract': return 'Rental contract'
@@ -67,7 +75,15 @@ function getDocumentTypeLabel(type: string): string {
   }
 }
 
-function ContractCard({ contract }: { contract: ContractRow }) {
+function ContractCard({
+  contract,
+  onEdit,
+  onDelete,
+}: {
+  contract: ContractRow
+  onEdit: (c: ContractRow) => void
+  onDelete: (c: ContractRow) => void
+}) {
   return (
     <Card className="group border-border shadow-none hover:shadow-sm transition-shadow">
       <CardContent className="p-3">
@@ -99,7 +115,11 @@ function ContractCard({ contract }: { contract: ContractRow }) {
                 <Download className="mr-2 h-3.5 w-3.5" />
                 Download
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-[13px] text-destructive">
+              <DropdownMenuItem className="text-[13px]" onClick={() => onEdit(contract)}>
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-[13px] text-destructive" onClick={() => onDelete(contract)}>
                 <Trash2 className="mr-2 h-3.5 w-3.5" />
                 Delete
               </DropdownMenuItem>
@@ -143,9 +163,41 @@ interface Props {
 }
 
 export function ContractsClient({ contracts, properties }: Props) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [propertyFilter, setPropertyFilter] = useState<string>('all')
+
+  const [editDialog, setEditDialog] = useState<{ open: boolean; contract: ContractRow | null }>({ open: false, contract: null })
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+
+  function openEdit(contract: ContractRow) {
+    setEditName(contract.documentName)
+    setEditType(contract.documentType)
+    setEditDialog({ open: true, contract })
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editDialog.contract) return
+    setEditSaving(true)
+    await fetch(`/api/documents/${editDialog.contract.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentName: editName, documentType: editType }),
+    })
+    setEditSaving(false)
+    setEditDialog({ open: false, contract: null })
+    router.refresh()
+  }
+
+  async function handleDelete(contract: ContractRow) {
+    if (!confirm(`Delete "${contract.documentName}"? This cannot be undone.`)) return
+    await fetch(`/api/documents/${contract.id}`, { method: 'DELETE' })
+    router.refresh()
+  }
 
   const filteredContracts = contracts.filter(contract => {
     const matchesSearch = !searchQuery ||
@@ -161,6 +213,44 @@ export function ContractsClient({ contracts, properties }: Props) {
 
   return (
     <div className="p-4 lg:p-5 space-y-5">
+      {/* Edit Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(v) => !v && setEditDialog({ open: false, contract: null })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSave} className="space-y-4 py-2">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <Input required value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Type</label>
+              <Select value={editType} onValueChange={(v) => setEditType(v ?? editType)}>
+                <SelectTrigger className="h-9 text-[13px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rental_contract" className="text-[13px]">Rental Contract</SelectItem>
+                  <SelectItem value="inventory" className="text-[13px]">Inventory</SelectItem>
+                  <SelectItem value="deposit_document" className="text-[13px]">Deposit Document</SelectItem>
+                  <SelectItem value="keys_record" className="text-[13px]">Keys Record</SelectItem>
+                  <SelectItem value="other" className="text-[13px]">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditDialog({ open: false, contract: null })}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving} className="flex-1">
+                {editSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1 max-w-xs">
@@ -262,18 +352,20 @@ export function ContractsClient({ contracts, properties }: Props) {
                             <Download className="h-3.5 w-3.5" />
                             <span className="sr-only">Download</span>
                           </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <MoreHorizontal className="h-3.5 w-3.5" />
-                                <span className="sr-only">More</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-32">
-                              <DropdownMenuItem className="text-[13px]">Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-[13px] text-destructive">Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7"
+                            onClick={() => openEdit(contract)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(contract)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -286,7 +378,12 @@ export function ContractsClient({ contracts, properties }: Props) {
           {/* Mobile Cards */}
           <div className="md:hidden grid gap-2">
             {filteredContracts.map(contract => (
-              <ContractCard key={contract.id} contract={contract} />
+              <ContractCard
+                key={contract.id}
+                contract={contract}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </>

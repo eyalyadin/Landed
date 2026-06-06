@@ -13,12 +13,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Building2,
   Home,
   Building,
   Search,
   User,
   Plus,
+  MoreHorizontal,
+  Trash2,
 } from 'lucide-react'
 import { formatILS } from '@/lib/format'
 
@@ -45,7 +54,15 @@ function PropertyTypeIcon({ type }: { type: string }) {
   return <Building2 className="h-8 w-8 text-muted-foreground" />
 }
 
-function PropertyCard({ property, onClick }: { property: PropertyItem; onClick: () => void }) {
+function PropertyCard({
+  property,
+  onClick,
+  onDelete,
+}: {
+  property: PropertyItem
+  onClick: () => void
+  onDelete: (p: PropertyItem) => void
+}) {
   const isOverdue = property.overdueCount > 0
   const isVacant = property.occupancyStatus === 'vacant'
 
@@ -55,6 +72,34 @@ function PropertyCard({ property, onClick }: { property: PropertyItem; onClick: 
       onClick={onClick}
     >
       <CardContent className="p-0">
+        {/* Three-dot menu */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost" size="icon" className="h-7 w-7"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+                <span className="sr-only">Options</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onClick() }}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(property) }}
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                Delete Property
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Icon + address block */}
         <div className="flex flex-col items-center px-4 pt-5 pb-3">
           <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted mb-3">
@@ -122,6 +167,12 @@ export function PropertiesClient({ properties }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
+  async function handleDeleteProperty(property: PropertyItem) {
+    if (!confirm(`Delete "${property.address}"? Jobs, documents and payments for this property will also be deleted. Tenants will be unlinked but not deleted.`)) return
+    await fetch(`/api/properties/${property.id}`, { method: 'DELETE' })
+    router.refresh()
+  }
+
   const filtered = properties.filter(p => {
     const q = searchQuery.toLowerCase()
     const matchesSearch = !q ||
@@ -180,6 +231,7 @@ export function PropertiesClient({ properties }: Props) {
               key={property.id}
               property={property}
               onClick={() => router.push(`/properties/${property.id}`)}
+              onDelete={handleDeleteProperty}
             />
           ))}
         </div>

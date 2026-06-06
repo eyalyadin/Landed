@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Pencil, UserPlus, Loader2 } from 'lucide-react'
+import { Pencil, UserPlus, Loader2, Trash2 } from 'lucide-react'
 
 export type TenantProp = {
   id: number
@@ -204,6 +204,27 @@ export function TenantButton({
               </Button>
               <Button type="submit" disabled={saving} className="flex-1">
                 {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save Changes'}
+              </Button>
+            </div>
+            <div className="pt-2 border-t border-border">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-destructive hover:text-destructive text-[13px]"
+                disabled={saving}
+                onClick={async () => {
+                  if (!tenant) return
+                  if (!confirm(`Remove tenant "${tenant.name}"? All related data (messages, payments, rent schedules) will be permanently deleted.`)) return
+                  setSaving(true)
+                  const res = await fetch(`/api/tenants/${tenant.id}`, { method: 'DELETE' })
+                  setSaving(false)
+                  if (res.ok) { setOpen(false); reset(); router.push(`/properties/${propertyId}`) }
+                  else { const d = await res.json().catch(() => ({})); setError(d.error ?? 'Failed to delete') }
+                }}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Remove Tenant
               </Button>
             </div>
           </form>

@@ -7,9 +7,7 @@ import {
   CreditCard,
   MessageSquare,
   Wrench,
-  Calendar,
   FileText,
-  Users,
   HardHat,
   Settings,
   Menu,
@@ -32,9 +30,7 @@ const navigation = [
   { name: 'Payments', href: '/payments', icon: CreditCard },
   { name: 'Messages', href: '/messages', icon: MessageSquare, countKey: 'unreadCount' as keyof Summary },
   { name: 'Tasks & Repairs', href: '/tasks', icon: Wrench, countKey: 'openTaskCount' as keyof Summary },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Contracts', href: '/contracts', icon: FileText },
-  { name: 'Tenants', href: '/tenants', icon: Users },
   { name: 'Vendors', href: '/vendors', icon: HardHat },
 ]
 

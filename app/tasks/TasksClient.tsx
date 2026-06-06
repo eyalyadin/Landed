@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,22 @@ interface Props {
 }
 
 export function TasksClient({ tasks }: Props) {
+  const router = useRouter()
   const [tab, setTab] = useState<'todo' | 'past'>('todo')
+
+  async function markComplete(id: number) {
+    await fetch(`/api/jobs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed' }),
+    })
+    router.refresh()
+  }
+
+  async function deleteTask(id: number) {
+    await fetch(`/api/jobs/${id}`, { method: 'DELETE' })
+    router.refresh()
+  }
 
   const todoTasks = tasks.filter(t => t.status !== 'completed')
   const pastTasks = tasks.filter(t => t.status === 'completed')
@@ -149,9 +165,20 @@ export function TasksClient({ tasks }: Props) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-36">
-                      <DropdownMenuItem className="text-[13px]">Edit</DropdownMenuItem>
-                      <DropdownMenuItem className="text-[13px]">Mark Complete</DropdownMenuItem>
-                      <DropdownMenuItem className="text-[13px] text-destructive">Delete</DropdownMenuItem>
+                      {tab === 'todo' && (
+                        <DropdownMenuItem
+                          className="text-[13px]"
+                          onClick={() => markComplete(task.id)}
+                        >
+                          Mark Complete
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        className="text-[13px] text-destructive"
+                        onClick={() => deleteTask(task.id)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

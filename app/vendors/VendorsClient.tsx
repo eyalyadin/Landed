@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { AppShell } from "@/components/app-shell"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -24,6 +25,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Search,
   Plus,
   Phone,
@@ -40,11 +48,15 @@ import {
   KeyRound,
   Bug,
   Sparkles,
+  Pencil,
+  Trash2,
+  Loader2,
 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -93,8 +105,64 @@ interface Props {
 }
 
 export function VendorsClient({ vendors }: Props) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedVendor, setSelectedVendor] = useState<VendorRow | null>(null)
+
+  // Edit dialog state
+  const [editDialog, setEditDialog] = useState<{ open: boolean; vendor: VendorRow | null }>({ open: false, vendor: null })
+  const [editName, setEditName] = useState("")
+  const [editPhone, setEditPhone] = useState("")
+  const [editEmail, setEditEmail] = useState("")
+  const [editCategory, setEditCategory] = useState("")
+  const [editServiceArea, setEditServiceArea] = useState("")
+  const [editContact, setEditContact] = useState("")
+  const [editNotes, setEditNotes] = useState("")
+  const [editPreferred, setEditPreferred] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+
+  function openEdit(vendor: VendorRow) {
+    setEditName(vendor.name)
+    setEditPhone(vendor.phone)
+    setEditEmail(vendor.email ?? "")
+    setEditCategory(vendor.category)
+    setEditServiceArea(vendor.serviceArea)
+    setEditContact(vendor.contactPerson ?? "")
+    setEditNotes(vendor.notes ?? "")
+    setEditPreferred(vendor.isPreferred)
+    setEditDialog({ open: true, vendor })
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editDialog.vendor) return
+    setEditSaving(true)
+    await fetch(`/api/vendors/${editDialog.vendor.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editName,
+        phone: editPhone,
+        email: editEmail || undefined,
+        category: editCategory,
+        serviceArea: editServiceArea,
+        contactPerson: editContact || undefined,
+        notes: editNotes || undefined,
+        isPreferred: editPreferred,
+      }),
+    })
+    setEditSaving(false)
+    setEditDialog({ open: false, vendor: null })
+    setSelectedVendor(null)
+    router.refresh()
+  }
+
+  async function handleDelete(vendor: VendorRow) {
+    if (!confirm(`Delete vendor "${vendor.name}"? This cannot be undone.`)) return
+    await fetch(`/api/vendors/${vendor.id}`, { method: "DELETE" })
+    if (selectedVendor?.id === vendor.id) setSelectedVendor(null)
+    router.refresh()
+  }
 
   const filteredVendors = vendors.filter(vendor =>
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -134,6 +202,74 @@ export function VendorsClient({ vendors }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Edit Vendor Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(v) => !v && setEditDialog({ open: false, vendor: null })}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Vendor</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSave} className="space-y-3 py-2">
+            <div>
+              <label className="block text-sm font-medium mb-1">Name *</label>
+              <Input required value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone *</label>
+                <Input required value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Category</label>
+                <Select value={editCategory} onValueChange={(v) => setEditCategory(v ?? editCategory)}>
+                  <SelectTrigger className="h-9 text-[13px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value} className="text-[13px]">{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Service Area</label>
+                <Input value={editServiceArea} onChange={(e) => setEditServiceArea(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Contact Person</label>
+              <Input value={editContact} onChange={(e) => setEditContact(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Notes</label>
+              <Input value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="editPreferred"
+                checked={editPreferred}
+                onChange={(e) => setEditPreferred(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <label htmlFor="editPreferred" className="text-sm font-medium">Preferred vendor</label>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setEditDialog({ open: false, vendor: null })}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving} className="flex-1">
+                {editSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -290,10 +426,21 @@ export function VendorsClient({ vendors }: Props) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Assign Job</DropdownMenuItem>
-                        <DropdownMenuItem>View History</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Vendor</DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedVendor(vendor) }}>
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(vendor) }}>
+                          <Pencil className="mr-2 h-3.5 w-3.5" />
+                          Edit Vendor
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(vendor) }}
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" />
+                          Delete Vendor
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -347,8 +494,8 @@ export function VendorsClient({ vendors }: Props) {
                     <span className="text-sm">{selectedVendor.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">Area:</span>
-                    <span className="text-sm">{selectedVendor.serviceArea}</span>
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Area: {selectedVendor.serviceArea}</span>
                   </div>
                 </div>
               </div>
@@ -370,11 +517,20 @@ export function VendorsClient({ vendors }: Props) {
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-2">Quick Actions</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Actions</h4>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm">Assign Job</Button>
-                  <Button variant="outline" size="sm">View History</Button>
-                  <Button variant="outline" size="sm">Edit Details</Button>
+                  <Button variant="outline" size="sm" onClick={() => openEdit(selectedVendor)}>
+                    <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                    Edit Details
+                  </Button>
+                  <Button
+                    variant="outline" size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(selectedVendor)}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Delete
+                  </Button>
                 </div>
               </div>
             </div>

@@ -102,3 +102,27 @@ export async function PATCH(
     return NextResponse.json({ error: "job not found" }, { status: 404 });
   }
 }
+
+// DELETE /api/jobs/[id]
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const appUser = await requireAppUserForApi();
+  if (!appUser) return unauthorized();
+
+  const { id } = await params;
+  const jobId = parseInt(id, 10);
+  if (!Number.isFinite(jobId)) {
+    return NextResponse.json({ error: "invalid id" }, { status: 400 });
+  }
+
+  const existing = await prisma.job.findFirst({
+    where: { id: jobId, property: { ownerId: appUser.id } },
+    select: { id: true },
+  });
+  if (!existing) return notFoundResponse();
+
+  await prisma.job.delete({ where: { id: jobId } });
+  return NextResponse.json({ ok: true });
+}
