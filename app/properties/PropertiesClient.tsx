@@ -60,10 +60,10 @@ function PropertyCard({ property, onClick }: { property: PropertyItem; onClick: 
           <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-muted mb-3">
             <PropertyTypeIcon type={property.propertyType} />
           </div>
-          <p className="text-sm font-semibold text-foreground text-center line-clamp-1 w-full">
+          <p dir="auto" className="text-sm font-semibold text-foreground text-center line-clamp-1 w-full">
             {property.address}
           </p>
-          <p className="text-xs text-muted-foreground text-center mt-0.5">{property.city}</p>
+          <p dir="auto" className="text-xs text-muted-foreground text-center mt-0.5">{property.city}</p>
         </div>
 
         <div className="px-4 pb-4 pt-0 space-y-2">

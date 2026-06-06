@@ -14,6 +14,7 @@ import { AddPaymentButton } from "./AddPaymentButton";
 import { AddContractButton } from "./AddContractButton";
 import { TenantButton } from "./TenantButton";
 import { PropertyHealthCard } from "./PropertyHealthCard";
+import { CollapsibleCard } from "./CollapsibleCard";
 import {
   Building2,
   Home,
@@ -240,7 +241,7 @@ export default async function PropertyDetailPage({
                   <div className="space-y-2">
                     {/* Name + Telegram status */}
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-base font-semibold text-foreground leading-tight">{tenant.name}</p>
+                      <p dir="auto" className="text-base font-semibold text-foreground leading-tight">{tenant.name}</p>
                       <span
                         className={`shrink-0 text-[11px] font-medium ${
                           tenant.telegramChatId
@@ -312,7 +313,7 @@ export default async function PropertyDetailPage({
 
                     {/* Notes */}
                     {(tenant.notes || tenant.keysAccessNotes) && (
-                      <p className="text-xs text-muted-foreground border-t border-border pt-2 mt-1">
+                      <p dir="auto" className="text-xs text-muted-foreground border-t border-border pt-2 mt-1">
                         {[tenant.keysAccessNotes, tenant.notes].filter(Boolean).join(" · ")}
                       </p>
                     )}
@@ -337,20 +338,20 @@ export default async function PropertyDetailPage({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="text-base font-semibold text-foreground leading-tight">
+                        <p dir="auto" className="text-base font-semibold text-foreground leading-tight">
                           {property.address}
                           {property.unitLabel && (
                             <span className="font-normal text-muted-foreground"> · {property.unitLabel}</span>
                           )}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p dir="auto" className="text-sm text-muted-foreground mt-0.5">
                           {property.city} · {propertyTypeLabel(property.propertyType)}
                         </p>
                       </div>
                       <OccupancyBadge status={property.occupancyStatus} />
                     </div>
                     {property.notes && (
-                      <p className="mt-2 text-xs text-muted-foreground">{property.notes}</p>
+                      <p dir="auto" className="mt-2 text-xs text-muted-foreground">{property.notes}</p>
                     )}
                   </div>
                 </div>
@@ -377,30 +378,25 @@ export default async function PropertyDetailPage({
         </Card>
 
         {/* ── 2. CURRENT TASKS ── */}
-        <Card className="border-border shadow-none">
-          <CardHeader className="px-5 py-4 border-b border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-sm font-semibold text-foreground">
-                  Current Tasks
-                </CardTitle>
-                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-muted text-muted-foreground text-[11px] font-medium">
-                  {openJobs.length}
-                </span>
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  {openJobs.length === 1 ? "task" : "tasks"} for this property
-                </span>
-              </div>
-              <AddTaskButton propertyId={property.id} />
+        <CollapsibleCard
+          headerLeft={
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Current Tasks</span>
+              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-muted text-muted-foreground text-[11px] font-medium">
+                {openJobs.length}
+              </span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                {openJobs.length === 1 ? "task" : "tasks"} for this property
+              </span>
             </div>
-          </CardHeader>
-          <CardContent className="p-4">
-            <TasksBoard propertyId={property.id} jobs={serializedJobs} tenant={tenantProp} />
-          </CardContent>
-        </Card>
+          }
+          headerRight={<AddTaskButton propertyId={property.id} />}
+        >
+          <TasksBoard propertyId={property.id} jobs={serializedJobs} tenant={tenantProp} />
+        </CollapsibleCard>
 
         {/* ── 3. MESSAGES (left) | RENT & PAYMENTS (right) ── */}
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-2">
 
           {/* Left: Messages — only when there is a tenant */}
           {tenant && (
@@ -408,7 +404,7 @@ export default async function PropertyDetailPage({
               <CardHeader className="px-5 py-4 border-b border-border">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm font-semibold text-foreground truncate">
-                    Messages with {tenant.name}
+                    Messages with <span dir="auto">{tenant.name}</span>
                   </CardTitle>
                   <Link
                     href={`/tenants/${tenant.id}`}
@@ -433,7 +429,7 @@ export default async function PropertyDetailPage({
           )}
 
           {/* Right: Rent & Payments — takes full width when no tenant */}
-          <Card className={`border-border shadow-none ${tenant ? "lg:col-span-2" : "lg:col-span-3"}`}>
+          <Card className={`border-border shadow-none ${tenant ? "lg:col-span-1" : "lg:col-span-2"}`}>
             <CardHeader className="px-5 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold text-foreground">Rent & Payments</CardTitle>
@@ -475,78 +471,76 @@ export default async function PropertyDetailPage({
         </div>
 
         {/* ── 4. CONTRACTS ── */}
-        <Card className="border-border shadow-none">
-          <CardHeader className="px-5 py-4 border-b border-border">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                Contracts
-                {property.documents.length > 0 && (
-                  <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-                    {property.documents.length}
-                  </span>
-                )}
-              </CardTitle>
-              <AddContractButton propertyId={property.id} />
+        <CollapsibleCard
+          headerLeft={
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Contracts
+              {property.documents.length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+                  {property.documents.length}
+                </span>
+              )}
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {property.documents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <FileText className="mb-2 h-7 w-7 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">No contracts yet</p>
+          }
+          headerRight={<AddContractButton propertyId={property.id} />}
+          contentClassName="p-0"
+        >
+          {property.documents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <FileText className="mb-2 h-7 w-7 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No contracts yet</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-[2fr_1fr_120px_40px] gap-4 border-b border-border bg-muted/40 px-5 py-2.5">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Document</span>
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Type</span>
+                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Uploaded</span>
+                <span />
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-[2fr_1fr_120px_40px] gap-4 border-b border-border bg-muted/40 px-5 py-2.5">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Document</span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Type</span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Uploaded</span>
-                  <span />
-                </div>
-                {property.documents.map((doc, i) => (
-                  <div
-                    key={doc.id}
-                    className={[
-                      "grid grid-cols-[2fr_1fr_120px_40px] gap-4 items-center px-5 py-3.5 hover:bg-muted/40 transition-colors",
-                      i < property.documents.length - 1 ? "border-b border-border" : "",
-                    ].join(" ")}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate text-[13px] font-medium text-foreground">
-                        {doc.documentName}
-                      </span>
-                    </div>
-                    <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {documentTypeLabel(doc.documentType)}
+              {property.documents.map((doc, i) => (
+                <div
+                  key={doc.id}
+                  className={[
+                    "grid grid-cols-[2fr_1fr_120px_40px] gap-4 items-center px-5 py-3.5 hover:bg-muted/40 transition-colors",
+                    i < property.documents.length - 1 ? "border-b border-border" : "",
+                  ].join(" ")}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate text-[13px] font-medium text-foreground">
+                      {doc.documentName}
                     </span>
-                    <span className="text-[13px] tabular-nums text-muted-foreground">
-                      {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
-                    </span>
-                    <div className="flex justify-end">
-                      {fileIdSet.has(doc.id) ? (
-                        <a
-                          href={`/api/documents/${doc.id}/file`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          <span className="sr-only">Download</span>
-                        </a>
-                      ) : (
-                        <span className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground/40">
-                          <Download className="h-3.5 w-3.5" />
-                        </span>
-                      )}
-                    </div>
                   </div>
-                ))}
-              </>
-            )}
-          </CardContent>
-        </Card>
+                  <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {documentTypeLabel(doc.documentType)}
+                  </span>
+                  <span className="text-[13px] tabular-nums text-muted-foreground">
+                    {new Date(doc.uploadedAt).toLocaleDateString("en-GB")}
+                  </span>
+                  <div className="flex justify-end">
+                    {fileIdSet.has(doc.id) ? (
+                      <a
+                        href={`/api/documents/${doc.id}/file`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span className="sr-only">Download</span>
+                      </a>
+                    ) : (
+                      <span className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground/40">
+                        <Download className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </CollapsibleCard>
 
       </div>
     </AppShell>

@@ -142,6 +142,7 @@ export function PropertyMessagesPanel({
               }}
               placeholder={`Message ${tenantName}…`}
               rows={2}
+              dir="auto"
               className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <div className="flex flex-col gap-1.5 self-end shrink-0">

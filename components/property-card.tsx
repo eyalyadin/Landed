@@ -55,11 +55,12 @@ export function PropertyCard({ property, tenant }: PropertyCardProps) {
         </div>
         <Link
           href={`/properties/${property.id}`}
+          dir="auto"
           className="text-sm font-semibold text-foreground hover:underline text-center line-clamp-1 w-full"
         >
           {property.address}
         </Link>
-        <p className="text-xs text-muted-foreground text-center mt-0.5">{property.city}</p>
+        <p dir="auto" className="text-xs text-muted-foreground text-center mt-0.5">{property.city}</p>
 
         {/* Actions menu — top-right corner */}
         <div className="absolute top-2 right-2">

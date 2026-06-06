@@ -1,18 +1,19 @@
 // PropertyHealthCard — MVP Property Health diagnostic section.
+// "use client" is required for the collapsible toggle (useState).
 //
-// Architecture note: This component is designed so the scoring logic can be
-// swapped for a real Gemini API call in the future.
-// Replace computePropertyHealth() with a call to /api/property-health, which
-// would send property data to Gemini and return the same HealthResult shape.
+// Architecture note: scoring logic can be swapped for a real Gemini API call.
+// Replace computePropertyHealth() body with a call to /api/property-health.
 //
 // Future learning signals to feed the LLM:
 //   • New tasks added (category, priority, recurrence pattern)
 //   • Tasks marked completed (resolution time, contractor used)
 //   • Repeated issue patterns (same category 3+ times within 12 months)
 //   • User feedback: "Was this recommendation helpful?" thumbs up/down
-//     stored in a PropertyHealthFeedback table and included in the next prompt
 
-import { Activity, Zap } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Activity, ChevronDown, Zap } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,6 @@ function computePropertyHealth(input: HealthInput): HealthResult {
       (j.category === "repair" || j.category === "maintenance")
   );
 
-  // Category occurrence counts across all jobs
   const catCounts: Record<string, number> = {};
   input.jobs.forEach((j) => {
     catCounts[j.category] = (catCounts[j.category] ?? 0) + 1;
@@ -70,7 +70,6 @@ function computePropertyHealth(input: HealthInput): HealthResult {
 
   const overduePayments = input.payments.filter((p) => p.status === "overdue");
 
-  // Category counts for the last 60 days (used for recent signals)
   const last60CatCounts: Record<string, number> = {};
   input.jobs
     .filter((j) => new Date(j.createdAt) >= sixtyDaysAgo)
@@ -78,7 +77,6 @@ function computePropertyHealth(input: HealthInput): HealthResult {
       last60CatCounts[j.category] = (last60CatCounts[j.category] ?? 0) + 1;
     });
 
-  // ── Score ────────────────────────────────────────────────────────────────
   let score = 100;
   score -= Math.min(openJobs.length * 5, 25);
   score -= urgentOpen.length * 10;
@@ -88,7 +86,6 @@ function computePropertyHealth(input: HealthInput): HealthResult {
   if (input.occupancyStatus === "vacant") score -= 5;
   score = Math.max(0, Math.min(100, score));
 
-  // ── Label ────────────────────────────────────────────────────────────────
   const label: HealthLabel =
     score >= 85
       ? "Excellent"
@@ -98,11 +95,9 @@ function computePropertyHealth(input: HealthInput): HealthResult {
       ? "Needs Attention"
       : "High Risk";
 
-  // ── Summary ──────────────────────────────────────────────────────────────
   let summary: string;
   if (score >= 85) {
-    summary =
-      "This property is in excellent condition with no major open issues and payments on track.";
+    summary = "This property is in excellent condition with no major open issues and payments on track.";
   } else if (score >= 70) {
     summary = `This property is in good condition overall.${
       repeatedCats.length > 0
@@ -129,41 +124,22 @@ function computePropertyHealth(input: HealthInput): HealthResult {
     }`;
   }
 
-  // ── Key factors ──────────────────────────────────────────────────────────
   const keyFactors: HealthResult["keyFactors"] = [
     {
       label: "Open tasks",
       value: openJobs.length === 0 ? "None" : `${openJobs.length} open`,
       sentiment:
-        openJobs.length === 0
-          ? "good"
-          : openJobs.length <= 2
-          ? "neutral"
-          : openJobs.length <= 4
-          ? "warning"
-          : "bad",
+        openJobs.length === 0 ? "good" : openJobs.length <= 2 ? "neutral" : openJobs.length <= 4 ? "warning" : "bad",
     },
     {
       label: "Repairs (12 mo.)",
-      value:
-        recentRepairs.length === 0
-          ? "None"
-          : `${recentRepairs.length} repair${recentRepairs.length > 1 ? "s" : ""}`,
+      value: recentRepairs.length === 0 ? "None" : `${recentRepairs.length} repair${recentRepairs.length > 1 ? "s" : ""}`,
       sentiment:
-        recentRepairs.length === 0
-          ? "good"
-          : recentRepairs.length <= 2
-          ? "neutral"
-          : recentRepairs.length <= 5
-          ? "warning"
-          : "bad",
+        recentRepairs.length === 0 ? "good" : recentRepairs.length <= 2 ? "neutral" : recentRepairs.length <= 5 ? "warning" : "bad",
     },
     {
       label: "Repeated issues",
-      value:
-        repeatedCats.length === 0
-          ? "None"
-          : repeatedCats.map((c) => c.replace(/_/g, " ")).join(", "),
+      value: repeatedCats.length === 0 ? "None" : repeatedCats.map((c) => c.replace(/_/g, " ")).join(", "),
       sentiment: repeatedCats.length === 0 ? "good" : repeatedCats.length === 1 ? "warning" : "bad",
     },
     {
@@ -173,25 +149,19 @@ function computePropertyHealth(input: HealthInput): HealthResult {
     },
   ];
 
-  // ── Recent signals ───────────────────────────────────────────────────────
   const signals: string[] = [];
   Object.entries(last60CatCounts).forEach(([cat, n]) => {
-    if (n >= 2)
-      signals.push(`${n} ${cat.replace(/_/g, " ")} issues reported in the last 60 days`);
+    if (n >= 2) signals.push(`${n} ${cat.replace(/_/g, " ")} issues reported in the last 60 days`);
   });
   if (urgentOpen.length === 0) {
     signals.push("No urgent repairs currently open");
   } else {
-    signals.push(
-      `${urgentOpen.length} urgent task${urgentOpen.length > 1 ? "s" : ""} require immediate attention`
-    );
+    signals.push(`${urgentOpen.length} urgent task${urgentOpen.length > 1 ? "s" : ""} require immediate attention`);
   }
   if (overduePayments.length === 0) {
     signals.push("Rent payments are up to date");
   } else {
-    signals.push(
-      `${overduePayments.length} payment${overduePayments.length > 1 ? "s are" : " is"} overdue`
-    );
+    signals.push(`${overduePayments.length} payment${overduePayments.length > 1 ? "s are" : " is"} overdue`);
   }
   const lastCompleted = [...input.jobs]
     .filter((j) => j.status === "completed")
@@ -199,11 +169,9 @@ function computePropertyHealth(input: HealthInput): HealthResult {
   if (lastCompleted) signals.push(`"${lastCompleted.title}" completed recently`);
   if (signals.length === 0) signals.push("No recent activity on this property");
 
-  // ── Recommendation ───────────────────────────────────────────────────────
   let recommendation: string;
   if (overduePayments.length > 0) {
-    recommendation =
-      "Follow up on overdue payments. Contact the tenant to arrange a payment plan.";
+    recommendation = "Follow up on overdue payments. Contact the tenant to arrange a payment plan.";
   } else if (urgentOpen.length > 0) {
     recommendation = `Address the ${urgentOpen.length > 1 ? `${urgentOpen.length} ` : ""}urgent open task${urgentOpen.length > 1 ? "s" : ""} as soon as possible.`;
   } else if (repeatedCats.length > 0) {
@@ -212,8 +180,7 @@ function computePropertyHealth(input: HealthInput): HealthResult {
   } else if (openJobs.length > 3) {
     recommendation = "Clear the backlog of open tasks to keep the property in good shape.";
   } else {
-    recommendation =
-      "Property is healthy. Schedule a routine inspection to maintain current condition.";
+    recommendation = "Property is healthy. Schedule a routine inspection to maintain current condition.";
   }
 
   return { score, label, summary, keyFactors, recentSignals: signals, recommendation };
@@ -236,11 +203,9 @@ const sentimentDot: Record<Sentiment, string> = {
 };
 
 const labelBadge: Record<HealthLabel, string> = {
-  Excellent:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+  Excellent: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
   Good: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  "Needs Attention":
-    "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  "Needs Attention": "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   "High Risk": "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
@@ -263,12 +228,16 @@ export function PropertyHealthCard({
   occupancyStatus: string;
 }) {
   const health = computePropertyHealth({ jobs, payments, occupancyStatus });
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="mt-4 border-t border-border pt-4 space-y-3">
+    <div className="mt-4 border-t border-border pt-4">
 
-      {/* ── Score row ── */}
-      <div className="flex items-center justify-between">
+      {/* ── Toggle row (always visible) ── */}
+      <button
+        onClick={() => setIsOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 rounded-md py-0.5 hover:opacity-80 transition-opacity"
+      >
         <div className="flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-muted-foreground" />
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -284,55 +253,64 @@ export function PropertyHealthCard({
           >
             {health.label}
           </span>
+          <ChevronDown
+            className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
         </div>
-      </div>
+      </button>
 
-      {/* ── Summary ── */}
-      <p className="text-xs text-muted-foreground leading-relaxed">{health.summary}</p>
+      {/* ── Collapsible details ── */}
+      {isOpen && (
+        <div className="mt-3 space-y-3">
 
-      {/* ── Key Factors ── */}
-      <div className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Key Factors
-        </p>
-        <div className="space-y-1.5">
-          {health.keyFactors.map((f) => (
-            <div key={f.label} className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${sentimentDot[f.sentiment]}`}
-                />
-                <span className="text-xs text-muted-foreground">{f.label}</span>
-              </div>
-              <span className={`text-xs font-medium ${sentimentText[f.sentiment]}`}>
-                {f.value}
-              </span>
+          {/* Summary */}
+          <p className="text-xs text-muted-foreground leading-relaxed">{health.summary}</p>
+
+          {/* Key Factors */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Key Factors
+            </p>
+            <div className="space-y-1.5">
+              {health.keyFactors.map((f) => (
+                <div key={f.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${sentimentDot[f.sentiment]}`} />
+                    <span className="text-xs text-muted-foreground">{f.label}</span>
+                  </div>
+                  <span className={`text-xs font-medium ${sentimentText[f.sentiment]}`}>
+                    {f.value}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Recent Signals */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Recent Signals
+            </p>
+            <ul className="space-y-1">
+              {health.recentSignals.map((signal, i) => (
+                <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
+                  {signal}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Recommended Next Step */}
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+            <p className="text-xs text-foreground leading-relaxed">{health.recommendation}</p>
+          </div>
+
         </div>
-      </div>
-
-      {/* ── Recent Signals ── */}
-      <div className="space-y-1">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Recent Signals
-        </p>
-        <ul className="space-y-1">
-          {health.recentSignals.map((signal, i) => (
-            <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted-foreground/40" />
-              {signal}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* ── Recommended Next Step ── */}
-      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-        <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-        <p className="text-xs text-foreground leading-relaxed">{health.recommendation}</p>
-      </div>
-
+      )}
     </div>
   );
 }

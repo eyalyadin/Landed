@@ -429,7 +429,7 @@ export function TaskDetailSheet({ task, propertyId, tenant, open, onOpenChange }
               Assign repair professional
             </p>
             {task.contractorName && (
-              <div className="mb-2 flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
+              <div dir="auto" className="mb-2 flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400">
                 <span className="font-medium">Currently assigned:</span> {task.contractorName}
               </div>
             )}
@@ -510,7 +510,7 @@ export function TaskDetailSheet({ task, propertyId, tenant, open, onOpenChange }
 
                   {sentOk && (
                     <p className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                      ✓ Message sent to {tenant.name}
+                      ✓ Message sent to <span dir="auto">{tenant.name}</span>
                     </p>
                   )}
 
@@ -534,7 +534,7 @@ export function TaskDetailSheet({ task, propertyId, tenant, open, onOpenChange }
                           ) : (
                             <Send className="mr-1.5 h-3.5 w-3.5" />
                           )}
-                          {sending ? "Sending…" : `Send to ${tenant.name}`}
+                          {sending ? "Sending…" : <>Send to <span dir="auto">{tenant.name}</span></>}
                         </Button>
                         <Button
                           onClick={() => setNotifyDraft("")}

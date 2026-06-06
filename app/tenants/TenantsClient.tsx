@@ -155,7 +155,7 @@ export function TenantsClient({ tenants }: { tenants: TenantSummaryRow[] }) {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{t.name}</div>
+                            <div dir="auto" className="font-medium">{t.name}</div>
                             {t.email && <div className="text-sm text-muted-foreground">{t.email}</div>}
                           </div>
                         </div>

@@ -75,7 +75,7 @@ export default async function TenantThread({
           <Link href="/tenants" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
             ← Back to tenants
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+          <h1 dir="auto" className="mt-1 text-2xl font-semibold tracking-tight">
             {tenant.name}
             {(propertyAddress || unitLabel) && (
               <span className="text-base text-zinc-500">
