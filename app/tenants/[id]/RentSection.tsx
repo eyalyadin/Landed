@@ -11,8 +11,27 @@ import {
   BellOff,
   Loader2,
   CheckCircle2,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { formatILS, formatDate } from "@/lib/format";
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+
+function daysUntil(isoDate: string): number {
+  const d = new Date(isoDate);
+  d.setHours(0, 0, 0, 0);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function daysLabel(days: number): string {
+  if (days < 0) return `${Math.abs(days)}d overdue`;
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow";
+  return `in ${days}d`;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -78,7 +97,19 @@ export default function RentSection({
 }) {
   const router = useRouter();
 
-  // New-schedule form state
+  // ── Computed payment summary ──────────────────────────────────────────────
+  const paidInvoices = invoices.filter((i) => i.status === "paid");
+  const overdueInvoices = invoices.filter((i) => i.status === "overdue");
+  const pendingInvoices = invoices.filter((i) => i.status === "pending");
+
+  // Next pending sorted by dueDate ascending
+  const nextPending = pendingInvoices
+    .slice()
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())[0] ?? null;
+
+  const nextDueDays = nextPending ? daysUntil(nextPending.dueDate) : null;
+
+  // ── Form state ────────────────────────────────────────────────────────────
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("1");
   const [startDate, setStartDate] = useState("");
@@ -288,7 +319,7 @@ export default function RentSection({
 
       {/* ── Payment history ── */}
       <div>
-        {/* Header: label + reminder button */}
+        {/* Header row */}
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Payment History
@@ -300,14 +331,14 @@ export default function RentSection({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 gap-1.5 text-[12px]"
+              className={`h-7 gap-1.5 text-[12px] ${hasOverdue ? "border-destructive/40 text-destructive hover:bg-destructive/5" : ""}`}
               disabled={!hasOverdue || sendingReminder}
               title={
                 !telegramLinked
-                  ? "Tenant not linked to Telegram"
+                  ? "Tenant not linked to Telegram — share the invite link first"
                   : !hasOverdue
-                  ? "No overdue payments"
-                  : "Send overdue reminder via Telegram"
+                  ? "No overdue payments to remind about"
+                  : `Send overdue reminder via Telegram (${overdueInvoices.length} overdue)`
               }
               onClick={sendReminder}
             >
@@ -318,10 +349,73 @@ export default function RentSection({
               ) : (
                 <BellOff className="h-3 w-3 opacity-40" />
               )}
-              {!telegramLinked ? "Not linked" : "Send reminder"}
+              {!telegramLinked
+                ? "Not linked"
+                : hasOverdue
+                ? `Remind (${overdueInvoices.length})`
+                : "Send reminder"}
             </Button>
           </div>
         </div>
+
+        {/* Summary bar — shows at a glance when there are invoices */}
+        {invoices.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2">
+            {/* Paid count */}
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[12px] font-medium text-foreground">
+                {paidInvoices.length}
+                <span className="font-normal text-muted-foreground"> paid</span>
+              </span>
+            </div>
+
+            <span className="text-border">·</span>
+
+            {/* Pending count */}
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[12px] font-medium text-foreground">
+                {pendingInvoices.length}
+                <span className="font-normal text-muted-foreground"> pending</span>
+              </span>
+            </div>
+
+            {overdueInvoices.length > 0 && (
+              <>
+                <span className="text-border">·</span>
+                <div className="flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                  <span className="text-[12px] font-medium text-destructive">
+                    {overdueInvoices.length} overdue
+                  </span>
+                </div>
+              </>
+            )}
+
+            {/* Next due pill */}
+            {nextPending && (
+              <div className="ml-auto flex items-center gap-1.5">
+                <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[12px] text-muted-foreground">
+                  Next:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatDate(new Date(nextPending.dueDate))}
+                  </span>
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium tabular-nums ${
+                    nextDueDays !== null && nextDueDays <= 7
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {nextDueDays !== null ? daysLabel(nextDueDays) : ""}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Empty state */}
         {invoices.length === 0 ? (
@@ -358,6 +452,8 @@ export default function RentSection({
                   "grid grid-cols-[80px_1fr_110px_100px] gap-3 items-center px-4 py-2.5 transition-colors hover:bg-muted/20",
                   inv.status === "overdue"
                     ? "border-l-2 border-destructive"
+                    : inv.status === "pending" && daysUntil(inv.dueDate) <= 7
+                    ? "border-l-2 border-amber-400"
                     : "border-l-2 border-transparent",
                   i < invoices.length - 1 ? "border-b border-border" : "",
                 ]
@@ -371,7 +467,7 @@ export default function RentSection({
                   {STATUS[inv.status].label}
                 </span>
 
-                {/* Due date + paid date */}
+                {/* Due date + paid date / days indicator */}
                 <div>
                   <p className="text-[13px] text-foreground">
                     {formatDate(new Date(inv.dueDate))}
@@ -381,6 +477,16 @@ export default function RentSection({
                       Paid {formatDate(new Date(inv.paidDate))}
                     </p>
                   )}
+                  {inv.status === "pending" && (() => {
+                    const days = daysUntil(inv.dueDate);
+                    if (days > 30) return null;
+                    const urgent = days <= 7;
+                    return (
+                      <p className={`text-[11px] font-medium ${urgent ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                        {daysLabel(days)}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 {/* Amount */}
