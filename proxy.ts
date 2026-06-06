@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { corsPreflight } from '@/lib/cors'
 
 const isPublicRoute = createRouteMatcher([
+  '/',
   '/login(.*)',
   '/signup(.*)',
   '/api/cron(.*)',
