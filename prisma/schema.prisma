@@ -137,12 +137,13 @@ model Property {
   managerName     String?
   notes           String?
 
-  landlord       Landlord        @relation(fields: [landlordId], references: [id], onDelete: Cascade)
-  tenants        Tenant[]
-  jobs           Job[]
-  documents      Document[]
-  payments       Payment[]
-  calendarEvents CalendarEvent[]
+  landlord         Landlord        @relation(fields: [landlordId], references: [id], onDelete: Cascade)
+  tenants          Tenant[]
+  jobs             Job[]
+  documents        Document[]
+  payments         Payment[]
+  calendarEvents   CalendarEvent[]
+  healthSnapshots  PropertyHealthSnapshot[]
 
   @@index([landlordId])
 }
@@ -340,6 +341,26 @@ model CalendarEvent {
   @@index([propertyId])
   @@index([tenantId])
   @@index([start])
+}
+
+// ─── Property Health Snapshots ───────────────────────────────────────────────
+// One row saved per property per day (or whenever the score changes by ≥5).
+// Used by PropertyHealthCard to compute trend (improving / stable / declining).
+
+model PropertyHealthSnapshot {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  score      Int
+  riskLevel  String
+  // Human-readable strings explaining what drove this score.
+  reasons    Json     @default("[]")
+  // Raw numbers used in the calculation — lets us replay/audit any snapshot.
+  metrics    Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, createdAt])
 }
 
 // ─── Learning Loop ────────────────────────────────────────────────────────────

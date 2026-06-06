@@ -15,6 +15,7 @@ import { AddContractButton } from "./AddContractButton";
 import { TenantButton } from "./TenantButton";
 import { PropertyHealthCard } from "./PropertyHealthCard";
 import { CollapsibleCard } from "./CollapsibleCard";
+import { computeAndSavePropertyHealth } from "@/lib/property-health";
 import {
   Building2,
   Home,
@@ -117,10 +118,13 @@ export default async function PropertyDetailPage({
 
   if (!property) notFound();
 
-  // Which documents have a stored PDF file (avoid loading bytes into the page render)
-  const docsWithFile = await prisma.$queryRaw<{ id: number }[]>`
-    SELECT id FROM "Document" WHERE "propertyId" = ${propertyId} AND "fileData" IS NOT NULL
-  `;
+  // Run document file check and health scoring in parallel.
+  const [docsWithFile, health] = await Promise.all([
+    prisma.$queryRaw<{ id: number }[]>`
+      SELECT id FROM "Document" WHERE "propertyId" = ${propertyId} AND "fileData" IS NOT NULL
+    `,
+    computeAndSavePropertyHealth(propertyId),
+  ]);
   const fileIdSet = new Set(docsWithFile.map((r: { id: number }) => r.id));
 
   const tenant = property.tenants[0] ?? null;
@@ -357,21 +361,7 @@ export default async function PropertyDetailPage({
                 </div>
 
                 {/* Property Health — below address */}
-                <PropertyHealthCard
-                  jobs={serializedJobs.map((j) => ({
-                    status: j.status,
-                    category: j.category,
-                    priority: j.priority,
-                    createdAt: j.createdAt,
-                    title: j.title,
-                  }))}
-                  payments={invoices.map((i) => ({
-                    status: i.status,
-                    amount: i.amount,
-                    dueDate: i.dueDate,
-                  }))}
-                  occupancyStatus={property.occupancyStatus}
-                />
+                <PropertyHealthCard health={health} />
               </div>
             </div>
           </CardContent>
