@@ -61,7 +61,10 @@ ALTER TABLE "CalendarEvent"
     FOREIGN KEY ("ownerId") REFERENCES "AppUser"("id")
     ON DELETE CASCADE ON UPDATE CASCADE;
 
-CREATE OR REPLACE VIEW vw_property_summary AS
+DROP VIEW IF EXISTS vw_job_summary;
+DROP VIEW IF EXISTS vw_property_summary;
+
+CREATE VIEW vw_property_summary AS
 SELECT
     p.id,
     p."ownerId",
@@ -85,7 +88,7 @@ LEFT JOIN "Job"     j  ON j."propertyId" = p.id
 LEFT JOIN "Payment" py ON py."propertyId" = p.id
 GROUP BY p.id;
 
-CREATE OR REPLACE VIEW vw_job_summary AS
+CREATE VIEW vw_job_summary AS
 SELECT
     j.*,
     p."ownerId",
