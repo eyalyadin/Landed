@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { documentName, documentType, propertyId } = body;
+    const { documentName, documentType, propertyId, uploadedAt } = body;
 
     if (!documentName || !propertyId) {
       return NextResponse.json({ error: "documentName and propertyId are required" }, { status: 400 });
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
         propertyId: parseInt(propertyId, 10),
         documentName,
         documentType: documentType ?? "other",
-        uploadedAt: new Date(),
+        uploadedAt: uploadedAt ? new Date(uploadedAt) : new Date(),
       },
     });
     return NextResponse.json({ id: doc.id }, { status: 201 });

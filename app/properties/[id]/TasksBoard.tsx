@@ -63,6 +63,8 @@ export function TasksBoard({
 }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<TaskItem[]>(jobs);
+  // Keep in sync when server re-renders with new jobs after router.refresh()
+  useEffect(() => setTasks(jobs), [jobs]);
   const [suggestions, setSuggestions] = useState<TaskTransition[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<number>>(new Set());
   const [dragId, setDragId] = useState<number | null>(null);

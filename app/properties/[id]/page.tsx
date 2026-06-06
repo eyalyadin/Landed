@@ -9,6 +9,10 @@ import { formatILS } from "@/lib/format";
 import RentSection from "@/app/tenants/[id]/RentSection";
 import { PropertyMessagesPanel } from "./PropertyMessagesPanel";
 import { TasksBoard, type TaskItem } from "./TasksBoard";
+import { AddTaskButton } from "./AddTaskButton";
+import { AddPaymentButton } from "./AddPaymentButton";
+import { AddContractButton } from "./AddContractButton";
+import { TenantButton } from "./TenantButton";
 import {
   Building2,
   Home,
@@ -19,7 +23,6 @@ import {
   Calendar,
   FileText,
   MessageSquare,
-  Plus,
   Download,
 } from "lucide-react";
 
@@ -190,6 +193,11 @@ export default async function PropertyDetailPage({
         id: tenant.id,
         name: tenant.name,
         telegramLinked: !!tenant.telegramChatId,
+        phone: tenant.phone,
+        email: tenant.email,
+        moveInDate: dateIso(tenant.moveInDate),
+        leaseEndDate: dateIso(tenant.leaseEndDate),
+        notes: tenant.notes,
       }
     : null;
 
@@ -212,9 +220,12 @@ export default async function PropertyDetailPage({
 
               {/* Left: Tenant */}
               <div className="p-5">
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Current Tenant
-                </p>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Current Tenant
+                  </p>
+                  <TenantButton propertyId={property.id} tenant={tenantProp} />
+                </div>
                 {tenant ? (
                   <div className="space-y-2">
                     {/* Name + Telegram status */}
@@ -353,10 +364,7 @@ export default async function PropertyDetailPage({
                   {openJobs.length === 1 ? "task" : "tasks"} for this property
                 </span>
               </div>
-              <Button size="sm" variant="outline" className="h-7 text-[12px]">
-                <Plus className="mr-1 h-3 w-3" />
-                Add Task
-              </Button>
+              <AddTaskButton propertyId={property.id} />
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -400,7 +408,10 @@ export default async function PropertyDetailPage({
           {/* Right: Rent & Payments — takes full width when no tenant */}
           <Card className={`border-border shadow-none ${tenant ? "lg:col-span-2" : "lg:col-span-3"}`}>
             <CardHeader className="px-5 py-4 border-b border-border">
-              <CardTitle className="text-sm font-semibold text-foreground">Rent & Payments</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold text-foreground">Rent & Payments</CardTitle>
+                {tenant && <AddPaymentButton tenantId={tenant.id} />}
+              </div>
             </CardHeader>
             <CardContent className="p-5">
               {/* Inline stats bar */}
@@ -439,15 +450,18 @@ export default async function PropertyDetailPage({
         {/* ── 4. CONTRACTS ── */}
         <Card className="border-border shadow-none">
           <CardHeader className="px-5 py-4 border-b border-border">
-            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              Contracts
-              {property.documents.length > 0 && (
-                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-                  {property.documents.length}
-                </span>
-              )}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Contracts
+                {property.documents.length > 0 && (
+                  <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+                    {property.documents.length}
+                  </span>
+                )}
+              </CardTitle>
+              <AddContractButton propertyId={property.id} />
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {property.documents.length === 0 ? (
